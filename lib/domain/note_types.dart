@@ -28,7 +28,9 @@ List<ClozePart> parseCloze(String text) {
   final parts = <ClozePart>[];
   var last = 0;
   for (final m in _clozePattern.allMatches(text)) {
-    if (m.start > last) parts.add(ClozePart.text(text.substring(last, m.start)));
+    if (m.start > last) {
+      parts.add(ClozePart.text(text.substring(last, m.start)));
+    }
     parts.add(ClozePart.cloze(int.parse(m.group(1)!), m.group(2)!, m.group(3)));
     last = m.end;
   }
@@ -37,9 +39,9 @@ List<ClozePart> parseCloze(String text) {
 }
 
 /// Numéros de trous présents, triés.
-List<int> clozeNumbers(String text) => {
-      for (final m in _clozePattern.allMatches(text)) int.parse(m.group(1)!),
-    }.toList()
+List<int> clozeNumbers(String text) =>
+    {for (final m in _clozePattern.allMatches(text)) int.parse(m.group(1)!)}
+        .toList()
       ..sort();
 
 /// Enveloppe [selected] dans un trou numéro [number].
@@ -73,15 +75,41 @@ class OcclusionMask {
     required this.width,
     required this.height,
     this.group = 1,
+    this.id = 0,
   });
 
-  factory OcclusionMask.fromJson(Map<String, dynamic> j) => OcclusionMask(
-        left: (j['x'] as num).toDouble(),
-        top: (j['y'] as num).toDouble(),
-        width: (j['w'] as num).toDouble(),
-        height: (j['h'] as num).toDouble(),
-        group: (j['g'] as num?)?.toInt() ?? 1,
-      );
+  factory OcclusionMask.fromJson(
+    Map<String, dynamic> j, [
+    int fallbackId = 0,
+  ]) => OcclusionMask(
+    left: (j['x'] as num).toDouble(),
+    top: (j['y'] as num).toDouble(),
+    width: (j['w'] as num).toDouble(),
+    height: (j['h'] as num).toDouble(),
+    group: (j['g'] as num?)?.toInt() ?? 1,
+    id: (j['i'] as num?)?.toInt() ?? fallbackId,
+  );
+
+  /// Numéro propre au masque dans sa note : c'est le numéro de sa carte en
+  /// mode « un seul caché », et il ne change pas quand on supprime un autre
+  /// masque (l'historique des autres cartes est conservé).
+  final int id;
+
+  OcclusionMask copyWith({
+    double? left,
+    double? top,
+    double? width,
+    double? height,
+    int? group,
+    int? id,
+  }) => OcclusionMask(
+    left: left ?? this.left,
+    top: top ?? this.top,
+    width: width ?? this.width,
+    height: height ?? this.height,
+    group: group ?? this.group,
+    id: id ?? this.id,
+  );
 
   final double left;
   final double top;
@@ -92,12 +120,13 @@ class OcclusionMask {
   final int group;
 
   Map<String, dynamic> toJson() => {
-        'x': left,
-        'y': top,
-        'w': width,
-        'h': height,
-        'g': group,
-      };
+    'x': left,
+    'y': top,
+    'w': width,
+    'h': height,
+    'g': group,
+    'i': id,
+  };
 }
 
 enum OcclusionMode { hideAll, hideOne, group }
@@ -117,6 +146,9 @@ class NoteFields {
   Map<String, dynamic> toMap() => Map.of(_data);
   String toJson() => jsonEncode(_data);
 
+  /// Tous les champs de texte (pour y chercher des médias).
+  Iterable<String> get stringValues => _data.values.whereType<String>();
+
   // Champs communs
   String get extra => text('extra');
   String get context => text('context');
@@ -124,13 +156,16 @@ class NoteFields {
   // Occlusion
   String get image => text('image');
   OcclusionMode get occlusionMode => OcclusionMode.values.firstWhere(
-        (m) => m.name == _data['mode'],
-        orElse: () => OcclusionMode.hideAll,
-      );
-  List<OcclusionMask> get masks => [
-        for (final m in (_data['masks'] as List? ?? const []))
-          OcclusionMask.fromJson((m as Map).cast<String, dynamic>()),
-      ];
+    (m) => m.name == _data['mode'],
+    orElse: () => OcclusionMode.hideAll,
+  );
+  List<OcclusionMask> get masks {
+    final raw = (_data['masks'] as List? ?? const []);
+    return [
+      for (var i = 0; i < raw.length; i++)
+        OcclusionMask.fromJson((raw[i] as Map).cast<String, dynamic>(), i),
+    ];
+  }
 }
 
 /// Valide une note ; renvoie null si elle est correcte.
@@ -174,11 +209,49 @@ List<int> cardOrdinals(NoteType type, NoteFields f) {
         case OcclusionMode.hideAll:
           return const [0];
         case OcclusionMode.hideOne:
-          return [for (var i = 0; i < masks.length; i++) i];
+          return ({for (final m in masks) m.id}.toList()..sort());
         case OcclusionMode.group:
           return ({for (final m in masks) m.group}.toList()..sort());
       }
   }
+}
+
+/// Zones masquées sur la carte numéro [ord] d'une note à occlusion : toutes
+/// en mode « tout caché », celle de la carte en mode « un seul caché », celles
+/// du groupe en mode « groupement ». Les autres zones restent visibles.
+List<OcclusionMask> activeMasks(NoteFields f, int ord) {
+  final masks = f.masks;
+  switch (f.occlusionMode) {
+    case OcclusionMode.hideAll:
+      return masks;
+    case OcclusionMode.hideOne:
+      return [
+        for (final m in masks)
+          if (m.id == ord) m,
+      ];
+    case OcclusionMode.group:
+      return [
+        for (final m in masks)
+          if (m.group == ord) m,
+      ];
+  }
+}
+
+/// Fichiers de médias utilisés par une note (images des champs, image d'une
+/// occlusion).
+Set<String> noteMedia(NoteFields f) => {
+  for (final v in f.stringValues) ...mediaInText(v),
+  if (f.image.isNotEmpty) f.image,
+};
+
+/// Clé qui identifie « le même contenu » (détection des doublons).
+String duplicateKey(NoteType type, NoteFields f) {
+  if (type == NoteType.occlusion) {
+    final masks = [for (final m in f.masks) m.toJson()];
+    return 'occ:${f.image}:${f.occlusionMode.name}:${jsonEncode(masks)}';
+  }
+  final media = noteMedia(f).toList()..sort();
+  return '${plainText(type, f)}|${media.join(',')}';
 }
 
 /// Rôle d'un morceau de texte sur une face de carte.
@@ -224,10 +297,14 @@ CardFace renderFace(NoteType type, NoteFields f, int ord) {
           q.add(FaceSegment(part.text));
           a.add(FaceSegment(part.text));
         } else if (part.number == ord) {
-          q.add(FaceSegment(
-            part.hint == null || part.hint!.isEmpty ? '[…]' : '[${part.hint}]',
-            SegmentRole.hidden,
-          ));
+          q.add(
+            FaceSegment(
+              part.hint == null || part.hint!.isEmpty
+                  ? '[…]'
+                  : '[${part.hint}]',
+              SegmentRole.hidden,
+            ),
+          );
           a.add(FaceSegment(part.text, SegmentRole.revealed));
         } else {
           q.add(FaceSegment(part.text));
@@ -275,12 +352,16 @@ CardFace renderFace(NoteType type, NoteFields f, int ord) {
   }
 }
 
+/// Symbole affiché à la place d'une image dans les listes.
+const imageListMark = '🖼';
+
 /// Texte brut d'une note (pour la recherche et les listes) : sans les
 /// marques de trous ni de mise en forme.
 String plainText(NoteType type, NoteFields f) {
   String clean(String s) => stripRich(
-        s.replaceAllMapped(_clozePattern, (m) => m.group(2)!),
-      );
+    s.replaceAllMapped(_clozePattern, (m) => m.group(2)!),
+    imageMark: imageListMark,
+  );
   switch (type) {
     case NoteType.cloze:
       return clean(f.text('text'));
@@ -296,10 +377,11 @@ String plainText(NoteType type, NoteFields f) {
 /// Compare la réponse tapée à la réponse attendue (sans tenir compte des
 /// majuscules, des accents ni des espaces en trop).
 bool typedAnswerMatches(String typed, String expected) {
-  String n(String s) => normalize(stripRich(s))
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .replaceAll(RegExp(r'[.,;:!?]+$'), '')
-      .trim();
+  String n(String s) =>
+      normalize(stripRich(s))
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(RegExp(r'[.,;:!?]+$'), '')
+          .trim();
   final a = n(typed);
   return a.isNotEmpty && a == n(expected);
 }
@@ -314,12 +396,25 @@ class RichRun {
     this.italic = false,
     this.underline = false,
     this.highlight = false,
+    this.image,
   });
+
+  /// Une image du dossier de médias, insérée dans le texte (`[img:nom.png]`).
+  const RichRun.image(String this.image)
+    : text = '',
+      bold = false,
+      italic = false,
+      underline = false,
+      highlight = false;
+
   final String text;
   final bool bold;
   final bool italic;
   final bool underline;
   final bool highlight;
+
+  /// Nom du fichier image dans le dossier de médias, ou null pour du texte.
+  final String? image;
 
   RichRun _with({bool? bold, bool? italic, bool? underline, bool? highlight}) =>
       RichRun(
@@ -330,6 +425,14 @@ class RichRun {
         highlight: highlight ?? this.highlight,
       );
 }
+
+/// Forme d'un nom de média : empreinte hexadécimale + extension, telle que
+/// la fabrique le dossier de médias (jamais de séparateur de chemin).
+final mediaNamePattern = RegExp(r'^[0-9a-f]{8,64}\.[a-z0-9]{2,5}$');
+final _imagePattern = RegExp(r'\[img:([0-9a-f]{8,64}\.[a-z0-9]{2,5})\]');
+
+/// Marque d'une image à insérer dans un champ.
+String imageMarker(String mediaName) => '[img:$mediaName]';
 
 /// Marques de mise en forme : `**gras**`, `*italique*`, `__souligné__`,
 /// `==surligné==`. Une marque sans sa fermeture reste du texte simple.
@@ -358,6 +461,15 @@ void _parseInto(String text, RichRun style, List<RichRun> out) {
   }
 
   while (i < text.length) {
+    if (text.startsWith('[img:', i)) {
+      final m = _imagePattern.matchAsPrefix(text, i);
+      if (m != null) {
+        flush();
+        out.add(RichRun.image(m.group(1)!));
+        i = m.end;
+        continue;
+      }
+    }
     String? found;
     for (final m in _markers.keys) {
       if (text.startsWith(m, i)) {
@@ -398,7 +510,8 @@ int _closingMarker(String text, String marker, int from) {
   var c = text.indexOf(marker, from + 1);
   while (c != -1) {
     // une étoile simple ne referme pas à l'intérieur d'une suite d'étoiles
-    final inStars = marker == '*' &&
+    final inStars =
+        marker == '*' &&
         (text[c - 1] == '*' || (c + 1 < text.length && text[c + 1] == '*'));
     if (!inStars && !_isSpace(text[c - 1])) return c;
     c = text.indexOf(marker, c + 1);
@@ -410,13 +523,20 @@ bool _isSpace(String ch) => ch.trim().isEmpty;
 
 extension on RichRun {
   RichRun _copyText(String t) => RichRun(
-        t,
-        bold: bold,
-        italic: italic,
-        underline: underline,
-        highlight: highlight,
-      );
+    t,
+    bold: bold,
+    italic: italic,
+    underline: underline,
+    highlight: highlight,
+  );
 }
 
-/// Texte sans les marques de mise en forme.
-String stripRich(String text) => parseRich(text).map((r) => r.text).join();
+/// Texte sans les marques de mise en forme. Les images disparaissent, ou sont
+/// remplacées par [imageMark] (pour les listes et les aperçus).
+String stripRich(String text, {String imageMark = ''}) =>
+    parseRich(text).map((r) => r.image != null ? imageMark : r.text).join();
+
+/// Noms des médias cités dans un texte.
+Set<String> mediaInText(String text) => {
+  for (final m in _imagePattern.allMatches(text)) m.group(1)!,
+};

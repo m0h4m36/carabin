@@ -60,10 +60,10 @@ class ColorDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }
 
 /// Fil d'Ariane : une suite de libellés, chacun cliquable sauf le dernier.
@@ -91,7 +91,10 @@ class Crumbs extends StatelessWidget {
               onTap: items[i].onTap,
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 2,
+                ),
                 child: Text(items[i].label, style: style),
               ),
             )

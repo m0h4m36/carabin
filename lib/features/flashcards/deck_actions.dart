@@ -14,7 +14,9 @@ import 'review_page.dart';
 /// Choix de l'ordre avant une séance d'un deck. Renvoie :
 /// `(chosen: false)` si l'utilisateur annule, sinon l'ordre voulu
 /// (`null` = comme d'habitude).
-Future<({bool chosen, StudyOrder? order})> askOrder(BuildContext context) async {
+Future<({bool chosen, StudyOrder? order})> askOrder(
+  BuildContext context,
+) async {
   final r = await pickFromList<int>(
     context,
     title: TxCards.orderAsk,
@@ -57,11 +59,19 @@ Future<void> chooseSubjectFor(BuildContext context, Deck deck) async {
     choices: [
       const Choice(-1, TxCards.noSubject),
       for (final (s, sem, y) in subjects)
-        Choice(s.id, s.name, subtitle: '${y.name} · ${sem.name}', color: colorOf(s.color)),
+        Choice(
+          s.id,
+          s.name,
+          subtitle: '${y.name} · ${sem.name}',
+          color: colorOf(s.color),
+        ),
     ],
   );
   if (r == null || !context.mounted) return;
-  await guarded(context, () => repo.setDeckSubject(deck.id, r == -1 ? null : r));
+  await guarded(
+    context,
+    () => repo.setDeckSubject(deck.id, r == -1 ? null : r),
+  );
 }
 
 /// Associe un poly à un deck (recherche par titre).
@@ -120,23 +130,25 @@ class _CoursePickerState extends State<_CoursePicker> {
                       child: Text(TxCards.typeToSearch),
                     )
                   : hits.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(TxCards.noCourseFound),
-                        )
-                      : ListView(
-                          shrinkWrap: true,
-                          children: [
-                            for (final h in hits)
-                              ListTile(
-                                title: Text(h.doc.title),
-                                subtitle: h.trail == null
-                                    ? null
-                                    : Text('${h.trail!.subject.name} › ${h.trail!.topic.name}'),
-                                onTap: () => Navigator.pop(context, h.doc.id),
-                              ),
-                          ],
-                        ),
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(TxCards.noCourseFound),
+                    )
+                  : ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final h in hits)
+                          ListTile(
+                            title: Text(h.doc.title),
+                            subtitle: h.trail == null
+                                ? null
+                                : Text(
+                                    '${h.trail!.subject.name} › ${h.trail!.topic.name}',
+                                  ),
+                            onTap: () => Navigator.pop(context, h.doc.id),
+                          ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -164,8 +176,13 @@ Future<void> setDeadline(BuildContext context, Deck deck) async {
   );
   if (picked == null || !context.mounted) return;
   int? moved;
-  final ok = await guarded(context, () => moved = repo.applyDeadline(deck.id, picked));
-  if (ok && context.mounted) showInfo(context, TxCards.deadlineDone(moved ?? 0));
+  final ok = await guarded(
+    context,
+    () => moved = repo.applyDeadline(deck.id, picked),
+  );
+  if (ok && context.mounted) {
+    showInfo(context, TxCards.deadlineDone(moved ?? 0));
+  }
 }
 
 /// Rattrapage de retard : tout reporter de N jours, ou étaler sur N jours.
@@ -175,7 +192,11 @@ Future<void> catchUp(BuildContext context, {Deck? deck}) async {
   final choice = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(deck == null ? TxCards.catchUpTitle : '${TxCards.catchUpTitle} · ${deck.name}'),
+      title: Text(
+        deck == null
+            ? TxCards.catchUpTitle
+            : '${TxCards.catchUpTitle} · ${deck.name}',
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +211,10 @@ Future<void> catchUp(BuildContext context, {Deck? deck}) async {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(Tx.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text(Tx.cancel),
+        ),
         OutlinedButton(
           onPressed: () => Navigator.pop(ctx, 'postpone'),
           child: const Text(TxCards.postponeAll),
@@ -216,7 +240,10 @@ Future<void> catchUp(BuildContext context, {Deck? deck}) async {
         : repo.spreadOverdue(n, deckId: deck?.id);
   });
   if (ok && context.mounted) {
-    showInfo(context, choice == 'postpone' ? TxCards.postponed(count) : TxCards.spread(count));
+    showInfo(
+      context,
+      choice == 'postpone' ? TxCards.postponed(count) : TxCards.spread(count),
+    );
   }
 }
 
@@ -231,7 +258,10 @@ Future<Deck?> createDeckDialog(BuildContext context, {int? subjectId}) async {
   );
   if (name == null || !context.mounted) return null;
   Deck? created;
-  await guarded(context, () => created = repo.createDeck(name, subjectId: subjectId));
+  await guarded(
+    context,
+    () => created = repo.createDeck(name, subjectId: subjectId),
+  );
   return created;
 }
 

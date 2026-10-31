@@ -85,19 +85,19 @@ abstract final class TxCards {
 
   // ---------------------------------------------------------- types de notes
   static String typeName(NoteType t) => switch (t) {
-        NoteType.cloze => 'Texte à trous',
-        NoteType.basic => 'Question-réponse',
-        NoteType.reversed => 'Réversible',
-        NoteType.typed => 'Réponse saisie',
-        NoteType.occlusion => 'Occlusion d\'image',
-      };
+    NoteType.cloze => 'Texte à trous',
+    NoteType.basic => 'Question-réponse',
+    NoteType.reversed => 'Réversible',
+    NoteType.typed => 'Réponse saisie',
+    NoteType.occlusion => 'Occlusion d\'image',
+  };
   static String typeHelp(NoteType t) => switch (t) {
-        NoteType.cloze => 'Masquez des mots dans un texte : une carte par trou.',
-        NoteType.basic => 'Une question au recto, la réponse au verso.',
-        NoteType.reversed => 'Deux cartes : recto → verso, puis verso → recto.',
-        NoteType.typed => 'Vous tapez la réponse, elle est comparée à la bonne.',
-        NoteType.occlusion => 'Masquez des zones d\'une image.',
-      };
+    NoteType.cloze => 'Masquez des mots dans un texte : une carte par trou.',
+    NoteType.basic => 'Une question au recto, la réponse au verso.',
+    NoteType.reversed => 'Deux cartes : recto → verso, puis verso → recto.',
+    NoteType.typed => 'Vous tapez la réponse, elle est comparée à la bonne.',
+    NoteType.occlusion => 'Masquez des zones d\'une image.',
+  };
   static const occlusionNote = 'Occlusion d\'image';
 
   // --------------------------------------------------------------- éditeur
@@ -106,7 +106,8 @@ abstract final class TxCards {
   static const fieldText = 'Texte';
   static const fieldFront = 'Recto';
   static const fieldBack = 'Verso';
-  static const fieldExtra = 'Complément (explication, source, moyen mnémotechnique)';
+  static const fieldExtra =
+      'Complément (explication, source, moyen mnémotechnique)';
   static const fieldContext = 'Contexte';
   static const fieldTags = 'Étiquettes (séparées par des espaces)';
   static const addContext = 'Ajouter un contexte';
@@ -115,8 +116,10 @@ abstract final class TxCards {
   static const chooseDeck = 'Choisissez un deck pour ranger la carte.';
   static const add = 'Ajouter';
   static const saveChanges = 'Enregistrer';
-  static String added(int n) => '${_n(n, 'carte créée', 'cartes créées')} pendant cette séance';
-  static String noteAdded(int cards) => '${_n(cards, 'carte ajoutée', 'cartes ajoutées')}.';
+  static String added(int n) =>
+      '${_n(n, 'carte créée', 'cartes créées')} pendant cette séance';
+  static String noteAdded(int cards) =>
+      '${_n(cards, 'carte ajoutée', 'cartes ajoutées')}.';
   static const noteSaved = 'Modifications enregistrées.';
   static const bold = 'Gras';
   static const italic = 'Italique';
@@ -131,22 +134,25 @@ abstract final class TxCards {
   static const previewAnswer = 'Réponse';
   static const previewEmpty = 'L\'aperçu apparaît ici.';
   static const duplicateTitle = 'Carte en double ?';
-  static const duplicate = 'Une carte identique existe déjà dans ce deck. L\'ajouter quand même ?';
+  static const duplicate =
+      'Une carte identique existe déjà dans ce deck. L\'ajouter quand même ?';
   static const addAnyway = 'Ajouter quand même';
-  static const clozeExample = 'Le {{c1::cœur}} pompe le sang vers les {{c2::artères}}.';
-  static const tapToSeeCloze = 'Exemple : sélectionnez un mot puis appuyez sur « Trou ».';
+  static const clozeExample =
+      'Le {{c1::cœur}} pompe le sang vers les {{c2::artères}}.';
+  static const tapToSeeCloze =
+      'Exemple : sélectionnez un mot puis appuyez sur « Trou ».';
   static String issue(NoteIssue i) => switch (i) {
-        NoteIssue.emptyFront => 'Le recto (ou le texte) est vide.',
-        NoteIssue.emptyBack => 'Le verso est vide.',
-        NoteIssue.noCloze =>
-          'Il faut au moins un trou : sélectionnez un mot puis appuyez sur « Trou ».',
-        NoteIssue.clozeNotClosed =>
-          'Un trou n\'est pas refermé : vérifiez les accolades {{ }}.',
-        NoteIssue.noImage => 'Choisissez d\'abord une image.',
-        NoteIssue.noMask => 'Dessinez au moins une zone à masquer.',
-      };
+    NoteIssue.emptyFront => 'Le recto (ou le texte) est vide.',
+    NoteIssue.emptyBack => 'Le verso est vide.',
+    NoteIssue.noCloze => 'Il faut au moins un trou : sélectionnez un mot puis appuyez sur « Trou ».',
+    NoteIssue.clozeNotClosed =>
+      'Un trou n\'est pas refermé : vérifiez les accolades {{ }}.',
+    NoteIssue.noImage => 'Choisissez d\'abord une image.',
+    NoteIssue.noMask => 'Dessinez au moins une zone à masquer.',
+  };
   static const shortcutsHint =
-      'Ctrl+Entrée : ajouter · Ctrl+Maj+C : trou · Ctrl+B / I / U : mise en forme';
+      'Ctrl+Entrée : ajouter · Alt+1 à 5 : type de carte · Ctrl+Maj+C : trou · '
+      'Ctrl+B / I / U : mise en forme';
 
   // ------------------------------------------------------ cartes d'un deck
   static String deckHeader(String name, int notes, int cards) =>
@@ -191,11 +197,11 @@ abstract final class TxCards {
   static const pillLearning = 'Apprentissage';
   static const pillReview = 'À revoir';
   static String gradeLabel(Grade g) => switch (g) {
-        Grade.again => 'Encore',
-        Grade.hard => 'Difficile',
-        Grade.good => 'Bien',
-        Grade.easy => 'Facile',
-      };
+    Grade.again => 'Encore',
+    Grade.hard => 'Difficile',
+    Grade.good => 'Bien',
+    Grade.easy => 'Facile',
+  };
   static const typeYourAnswer = 'Tapez votre réponse';
   static const typedRight = 'Bonne réponse';
   static const typedWrong = 'Ce n\'est pas la bonne réponse';
@@ -210,7 +216,8 @@ abstract final class TxCards {
       : '${_n(n, 'carte révisée', 'cartes révisées')}.';
   static String nextReview(String when, int n) =>
       'Prochaine révision : $when — ${_n(n, 'carte programmée', 'cartes programmées')}.';
-  static const nothingScheduled = 'Aucune carte programmée pour les prochains jours.';
+  static const nothingScheduled =
+      'Aucune carte programmée pour les prochains jours.';
   static const backToDecks = 'Retour aux decks';
   static const sessionPanel = 'Session';
   static const cardPanel = 'Carte';
@@ -243,14 +250,16 @@ abstract final class TxCards {
   static const orderShuffled = 'Mélangées';
   static const orderCourse = 'Dans l\'ordre du cours';
   static const orderUsual = 'Comme d\'habitude';
-  static const unknownCardType = 'Ce type de carte ne peut pas encore s\'afficher ici.';
+  static const unknownCardType =
+      'Ce type de carte ne peut pas encore s\'afficher ici.';
 
   // ------------------------------------------------------------- s'entraîner
   static const practiceNew = 'Nouvelle séance';
   static const practiceHistory = 'Historique';
   static const practiceMode = 'Mode';
   static const modeReview = 'Réviser';
-  static const modeReviewDetail = 'Chaque carte est reprogrammée selon votre réponse.';
+  static const modeReviewDetail =
+      'Chaque carte est reprogrammée selon votre réponse.';
   static const modeTest = 'Se tester';
   static const modeTestDetail =
       'Je savais ou pas : une note sur 20 à la fin, rien n\'est reprogrammé.';
@@ -263,9 +272,11 @@ abstract final class TxCards {
   static const startReview = 'Réviser';
   static const startTest = 'Se tester';
   static const pickAtLeastOne = 'Cochez au moins un deck.';
-  static const nothingToDraw = 'Les decks cochés ne contiennent aucune carte à tirer.';
+  static const nothingToDraw =
+      'Les decks cochés ne contiennent aucune carte à tirer.';
   static const noPractice = 'Aucune séance enregistrée.';
-  static const noPracticeDetail = 'Vos notes sur 20 apparaîtront ici après un « Se tester ».';
+  static const noPracticeDetail =
+      'Vos notes sur 20 apparaîtront ici après un « Se tester ».';
   static const didntKnow = 'Je ne savais pas';
   static const knew = 'Je savais';
   static String testProgress(int n, int total, int right) =>
@@ -274,7 +285,8 @@ abstract final class TxCards {
       '${s.toStringAsFixed(s == s.roundToDouble() ? 0 : 1).replaceAll('.', ',')} / 20';
   static String testRight(int right, int total, int percent) =>
       '$right juste${right > 1 ? 's' : ''} sur $total · $percent %';
-  static const nothingReprogrammed = 'Rien n\'a été reprogrammé : cette séance ne change pas votre calendrier de révision.';
+  static const nothingReprogrammed =
+      'Rien n\'a été reprogrammé : cette séance ne change pas votre calendrier de révision.';
   static const redraw = 'Refaire un tirage';
   static const seeHistory = 'Voir l\'historique';
   static String appreciation(double s) {
@@ -286,11 +298,13 @@ abstract final class TxCards {
     if (s >= 7) return 'À consolider';
     return 'À retravailler';
   }
+
   static String duration(Duration d) {
     final m = d.inMinutes;
     final s = d.inSeconds % 60;
     return m == 0 ? '$s s' : '$m min ${s.toString().padLeft(2, '0')} s';
   }
+
   static const deletePractice = 'Supprimer cette séance';
 
   // --------------------------------------------------------------- réglages
@@ -321,7 +335,8 @@ abstract final class TxCards {
   static const leechAction = 'Action';
   static const leechSuspend = 'Mettre de côté';
   static const leechNone = 'Ne rien faire';
-  static const showPassCounter = 'Afficher le compteur de passages sur la carte';
+  static const showPassCounter =
+      'Afficher le compteur de passages sur la carte';
   static const resetDefaults = 'Revenir aux valeurs par défaut';
   static String loadEstimate(int perDay, int? cap) {
     final base = '≈ $perDay révisions par jour une fois le rythme installé';
@@ -330,14 +345,31 @@ abstract final class TxCards {
         ? '$base, au-delà de votre plafond de $cap : le retard s\'accumulerait.'
         : '$base, sous votre plafond de $cap.';
   }
+
   static const settingsSaved = 'Réglages enregistrés.';
 
   static const _weekdays = [
-    'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
+    'lundi',
+    'mardi',
+    'mercredi',
+    'jeudi',
+    'vendredi',
+    'samedi',
+    'dimanche',
   ];
   static const _months = [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août',
-    'septembre', 'octobre', 'novembre', 'décembre',
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
   ];
 
   /// « aujourd'hui à 15:20 », « demain », « jeudi », « 12 mars »…
@@ -353,5 +385,6 @@ abstract final class TxCards {
     return '${at.day} ${_months[at.month - 1]}';
   }
 
-  static String _n(int n, String one, String many) => '$n ${n <= 1 ? one : many}';
+  static String _n(int n, String one, String many) =>
+      '$n ${n <= 1 ? one : many}';
 }

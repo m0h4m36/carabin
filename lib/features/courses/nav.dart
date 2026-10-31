@@ -12,9 +12,7 @@ void pushNamedPage(BuildContext context, String name, WidgetBuilder builder) {
 }
 
 void popToRoute(BuildContext context, String name) {
-  Navigator.of(context).popUntil(
-    (r) => r.isFirst || r.settings.name == name,
-  );
+  Navigator.of(context).popUntil((r) => r.isFirst || r.settings.name == name);
 }
 
 /// Quand l'élément affiché a disparu (supprimé ailleurs), on ferme la page.

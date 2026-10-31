@@ -19,6 +19,9 @@ class Workspace {
   String get dbPath => p.join(root, dbFileName);
   String get coursDir => p.join(root, coursName);
   String get decksDir => p.join(root, decksName);
+
+  /// Images (et autres médias) des cartes, nommées par empreinte du contenu.
+  String get mediaDir => p.join(root, decksName, 'media');
   String get qcmDir => p.join(root, qcmName);
   String get archivesDir => p.join(root, archivesName);
   String get archivesCoursDir => p.join(archivesDir, coursName);
@@ -35,6 +38,7 @@ class Workspace {
     for (final d in [
       coursDir,
       decksDir,
+      mediaDir,
       qcmDir,
       p.join(archivesDir, coursName),
       p.join(archivesDir, 'Flashcards'),

@@ -71,10 +71,9 @@ class CoursesRepository {
   }) {
     final rows = parentColumn == null
         ? db.select('SELECT id, name FROM $table')
-        : db.select(
-            'SELECT id, name FROM $table WHERE $parentColumn = ?',
-            [parentId],
-          );
+        : db.select('SELECT id, name FROM $table WHERE $parentColumn = ?', [
+            parentId,
+          ]);
     final wanted = safeFileName(name).toLowerCase();
     for (final r in rows) {
       if (r['id'] == exceptId) continue;
@@ -126,10 +125,8 @@ class CoursesRepository {
   }
 
   /// Chemin relatif (« / ») du dossier d'un élément.
-  String relDir(CourseLevel level, int id) => [
-        Workspace.coursName,
-        ..._names(level, id).map(safeFileName),
-      ].join('/');
+  String relDir(CourseLevel level, int id) =>
+      [Workspace.coursName, ..._names(level, id).map(safeFileName)].join('/');
 
   String _join(String parent, String child) => '$parent/${safeFileName(child)}';
 
@@ -154,32 +151,32 @@ class CoursesRepository {
       'JOIN years y ON y.id = s.year_id';
 
   Trail _trailFromRow(Row r) => Trail(
-        year: Year(
-          id: r['y_id'] as int,
-          name: r['y_name'] as String,
-          position: r['y_pos'] as int,
-        ),
-        semester: Semester(
-          id: r['s_id'] as int,
-          yearId: r['s_year'] as int,
-          name: r['s_name'] as String,
-          position: r['s_pos'] as int,
-        ),
-        subject: Subject(
-          id: r['m_id'] as int,
-          semesterId: r['m_sem'] as int,
-          name: r['m_name'] as String,
-          color: r['m_color'] as int,
-          position: r['m_pos'] as int,
-          examDate: r['m_exam'] as String?,
-        ),
-        topic: Topic(
-          id: r['t_id'] as int,
-          subjectId: r['t_subject'] as int,
-          name: r['t_name'] as String,
-          position: r['t_pos'] as int,
-        ),
-      );
+    year: Year(
+      id: r['y_id'] as int,
+      name: r['y_name'] as String,
+      position: r['y_pos'] as int,
+    ),
+    semester: Semester(
+      id: r['s_id'] as int,
+      yearId: r['s_year'] as int,
+      name: r['s_name'] as String,
+      position: r['s_pos'] as int,
+    ),
+    subject: Subject(
+      id: r['m_id'] as int,
+      semesterId: r['m_sem'] as int,
+      name: r['m_name'] as String,
+      color: r['m_color'] as int,
+      position: r['m_pos'] as int,
+      examDate: r['m_exam'] as String?,
+    ),
+    topic: Topic(
+      id: r['t_id'] as int,
+      subjectId: r['t_subject'] as int,
+      name: r['t_name'] as String,
+      position: r['t_pos'] as int,
+    ),
+  );
 
   Trail trailOfTopic(int topicId) {
     final rows = db.select('$_trailSelect WHERE t.id = ?', [topicId]);
@@ -190,21 +187,19 @@ class CoursesRepository {
   /// Tous les thèmes avec leur chemin complet, dans l'ordre de l'arborescence
   /// (pour les listes de choix : déplacer, rattacher, examens).
   List<Trail> allTrails() => [
-        for (final r in db.select(
-          '$_trailSelect ORDER BY y.position, y.id, s.position, s.id, '
-          'm.position, m.id, t.position, t.id',
-        ))
-          _trailFromRow(r),
-      ];
+    for (final r in db.select(
+      '$_trailSelect ORDER BY y.position, y.id, s.position, s.id, '
+      'm.position, m.id, t.position, t.id',
+    ))
+      _trailFromRow(r),
+  ];
 
   // --------------------------------------------------------------- lecture
 
   List<Year> years() => [
-        for (final r in db.select(
-          'SELECT * FROM years ORDER BY position, id',
-        ))
-          Year.fromRow(r),
-      ];
+    for (final r in db.select('SELECT * FROM years ORDER BY position, id'))
+      Year.fromRow(r),
+  ];
 
   Year year(int id) {
     final rows = db.select('SELECT * FROM years WHERE id = ?', [id]);
@@ -213,20 +208,20 @@ class CoursesRepository {
   }
 
   List<Semester> semesters(int yearId) => [
-        for (final r in db.select(
-          'SELECT * FROM semesters WHERE year_id = ? ORDER BY position, id',
-          [yearId],
-        ))
-          Semester.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM semesters WHERE year_id = ? ORDER BY position, id',
+      [yearId],
+    ))
+      Semester.fromRow(r),
+  ];
 
   List<Subject> subjects(int semesterId) => [
-        for (final r in db.select(
-          'SELECT * FROM subjects WHERE semester_id = ? ORDER BY position, id',
-          [semesterId],
-        ))
-          Subject.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM subjects WHERE semester_id = ? ORDER BY position, id',
+      [semesterId],
+    ))
+      Subject.fromRow(r),
+  ];
 
   Subject subject(int id) {
     final rows = db.select('SELECT * FROM subjects WHERE id = ?', [id]);
@@ -237,55 +232,55 @@ class CoursesRepository {
   /// Toutes les matières, avec leur semestre et leur année (pour les listes
   /// de choix : QCM, examens, paquets).
   List<(Subject, Semester, Year)> allSubjects() => [
-        for (final r in db.select(
-          'SELECT m.id AS m_id, m.semester_id AS m_sem, m.name AS m_name, '
-          'm.color AS m_color, m.position AS m_pos, m.exam_date AS m_exam, '
-          's.id AS s_id, s.year_id AS s_year, s.name AS s_name, '
-          's.position AS s_pos, y.id AS y_id, y.name AS y_name, '
-          'y.position AS y_pos FROM subjects m '
-          'JOIN semesters s ON s.id = m.semester_id '
-          'JOIN years y ON y.id = s.year_id '
-          'ORDER BY y.position, y.id, s.position, s.id, m.position, m.id',
-        ))
-          (
-            Subject(
-              id: r['m_id'] as int,
-              semesterId: r['m_sem'] as int,
-              name: r['m_name'] as String,
-              color: r['m_color'] as int,
-              position: r['m_pos'] as int,
-              examDate: r['m_exam'] as String?,
-            ),
-            Semester(
-              id: r['s_id'] as int,
-              yearId: r['s_year'] as int,
-              name: r['s_name'] as String,
-              position: r['s_pos'] as int,
-            ),
-            Year(
-              id: r['y_id'] as int,
-              name: r['y_name'] as String,
-              position: r['y_pos'] as int,
-            ),
-          ),
-      ];
+    for (final r in db.select(
+      'SELECT m.id AS m_id, m.semester_id AS m_sem, m.name AS m_name, '
+      'm.color AS m_color, m.position AS m_pos, m.exam_date AS m_exam, '
+      's.id AS s_id, s.year_id AS s_year, s.name AS s_name, '
+      's.position AS s_pos, y.id AS y_id, y.name AS y_name, '
+      'y.position AS y_pos FROM subjects m '
+      'JOIN semesters s ON s.id = m.semester_id '
+      'JOIN years y ON y.id = s.year_id '
+      'ORDER BY y.position, y.id, s.position, s.id, m.position, m.id',
+    ))
+      (
+        Subject(
+          id: r['m_id'] as int,
+          semesterId: r['m_sem'] as int,
+          name: r['m_name'] as String,
+          color: r['m_color'] as int,
+          position: r['m_pos'] as int,
+          examDate: r['m_exam'] as String?,
+        ),
+        Semester(
+          id: r['s_id'] as int,
+          yearId: r['s_year'] as int,
+          name: r['s_name'] as String,
+          position: r['s_pos'] as int,
+        ),
+        Year(
+          id: r['y_id'] as int,
+          name: r['y_name'] as String,
+          position: r['y_pos'] as int,
+        ),
+      ),
+  ];
 
   List<Topic> topics(int subjectId) => [
-        for (final r in db.select(
-          'SELECT * FROM topics WHERE subject_id = ? ORDER BY position, id',
-          [subjectId],
-        ))
-          Topic.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM topics WHERE subject_id = ? ORDER BY position, id',
+      [subjectId],
+    ))
+      Topic.fromRow(r),
+  ];
 
   List<Doc> documents(int topicId) => [
-        for (final r in db.select(
-          'SELECT * FROM documents WHERE topic_id = ? AND archived_at IS NULL '
-          'ORDER BY position, id',
-          [topicId],
-        ))
-          Doc.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM documents WHERE topic_id = ? AND archived_at IS NULL '
+      'ORDER BY position, id',
+      [topicId],
+    ))
+      Doc.fromRow(r),
+  ];
 
   Doc? document(int id) {
     final rows = db.select('SELECT * FROM documents WHERE id = ?', [id]);
@@ -294,27 +289,30 @@ class CoursesRepository {
 
   /// Nombre de thèmes et de documents d'une matière.
   (int topics, int docs) subjectCounts(int subjectId) {
-    final t = db.select(
-      'SELECT COUNT(*) AS n FROM topics WHERE subject_id = ?',
-      [subjectId],
-    ).first['n'] as int;
-    final d = db.select(
-      'SELECT COUNT(*) AS n FROM documents d JOIN topics t ON t.id = d.topic_id '
-      'WHERE t.subject_id = ? AND d.archived_at IS NULL',
-      [subjectId],
-    ).first['n'] as int;
+    final t =
+        db.select('SELECT COUNT(*) AS n FROM topics WHERE subject_id = ?', [
+              subjectId,
+            ]).first['n']
+            as int;
+    final d =
+        db.select(
+              'SELECT COUNT(*) AS n FROM documents d JOIN topics t ON t.id = d.topic_id '
+              'WHERE t.subject_id = ? AND d.archived_at IS NULL',
+              [subjectId],
+            ).first['n']
+            as int;
     return (t, d);
   }
 
   /// Documents récemment ouverts, du plus récent au plus ancien.
   List<Doc> recents({int limit = 8}) => [
-        for (final r in db.select(
-          'SELECT * FROM documents WHERE last_opened_at IS NOT NULL '
-          'AND archived_at IS NULL ORDER BY last_opened_at DESC LIMIT ?',
-          [limit],
-        ))
-          Doc.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM documents WHERE last_opened_at IS NOT NULL '
+      'AND archived_at IS NULL ORDER BY last_opened_at DESC LIMIT ?',
+      [limit],
+    ))
+      Doc.fromRow(r),
+  ];
 
   /// Documents dont le titre contient [query] (sans tenir compte des
   /// majuscules ni des accents).
@@ -350,10 +348,10 @@ class CoursesRepository {
     _checkFree(table: 'years', parentColumn: null, parentId: null, name: name);
     _mkdir('${Workspace.coursName}/${safeFileName(name)}');
     final id = db.transaction(() {
-      db.execute(
-        'INSERT INTO years(name, position) VALUES (?, ?)',
-        [name, _nextPosition('years', null, null)],
-      );
+      db.execute('INSERT INTO years(name, position) VALUES (?, ?)', [
+        name,
+        _nextPosition('years', null, null),
+      ]);
       return db.lastInsertId;
     });
     return year(id);
@@ -462,14 +460,7 @@ class CoursesRepository {
       '${archive ? ', archived_at = ?' : ''} '
       'WHERE archived_at IS NULL AND substr(rel_path, 1, ?) = ? '
       "AND substr(rel_path, ?, 1) = '/'",
-      [
-        newRel,
-        oldLen + 1,
-        if (archive) _stamp(),
-        oldLen,
-        oldRel,
-        oldLen + 1,
-      ],
+      [newRel, oldLen + 1, if (archive) _stamp(), oldLen, oldRel, oldLen + 1],
     );
   }
 
@@ -559,10 +550,10 @@ class CoursesRepository {
   void reorder(CourseLevel level, List<int> orderedIds) {
     db.transaction(() {
       for (var i = 0; i < orderedIds.length; i++) {
-        db.execute(
-          'UPDATE ${_tables[level]} SET position = ? WHERE id = ?',
-          [i, orderedIds[i]],
-        );
+        db.execute('UPDATE ${_tables[level]} SET position = ? WHERE id = ?', [
+          i,
+          orderedIds[i],
+        ]);
       }
     });
   }
@@ -723,10 +714,7 @@ class CoursesRepository {
   void renameDocument(int docId, String rawTitle) {
     final title = _cleanName(rawTitle);
     db.transaction(() {
-      db.execute('UPDATE documents SET title = ? WHERE id = ?', [
-        title,
-        docId,
-      ]);
+      db.execute('UPDATE documents SET title = ? WHERE id = ?', [title, docId]);
     });
   }
 
@@ -858,8 +846,7 @@ class CoursesRepository {
     if (!d.existsSync()) return const [];
     return d.listSync(followLinks: false).where((e) {
       return !_ignorable(p.basename(e.path));
-    }).toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    }).toList()..sort((a, b) => a.path.compareTo(b.path));
   }
 
   /// Relit `Cours/` : ajoute les dossiers et fichiers inconnus. Rien n'est
@@ -890,7 +877,12 @@ class CoursesRepository {
             );
             for (final tDir in _children(mDir.path).whereType<Directory>()) {
               final tName = p.basename(tDir.path);
-              final topicId = _findOrCreate('topics', 'subject_id', subId, tName);
+              final topicId = _findOrCreate(
+                'topics',
+                'subject_id',
+                subId,
+                tName,
+              );
               for (final f in _children(tDir.path).whereType<File>()) {
                 final rel = workspace.relative(f.path);
                 final known = db.select(
@@ -942,10 +934,9 @@ class CoursesRepository {
   }) {
     final rows = parentColumn == null
         ? db.select('SELECT id, name FROM $table')
-        : db.select(
-            'SELECT id, name FROM $table WHERE $parentColumn = ?',
-            [parentId],
-          );
+        : db.select('SELECT id, name FROM $table WHERE $parentColumn = ?', [
+            parentId,
+          ]);
     for (final r in rows) {
       final other = r['name'] as String;
       if (other.toLowerCase() == name.toLowerCase() ||

@@ -47,33 +47,31 @@ class StudyOptions {
     int? leechThreshold,
     LeechAction? leechAction,
     bool? showPassCounter,
-  }) =>
-      StudyOptions(
-        onePerNotePerDay: onePerNotePerDay ?? this.onePerNotePerDay,
-        order: order ?? this.order,
-        newPerDay:
-            identical(newPerDay, _keep) ? this.newPerDay : newPerDay as int?,
-        reviewsPerDay: identical(reviewsPerDay, _keep)
-            ? this.reviewsPerDay
-            : reviewsPerDay as int?,
-        retention: retention ?? this.retention,
-        leechThreshold: leechThreshold ?? this.leechThreshold,
-        leechAction: leechAction ?? this.leechAction,
-        showPassCounter: showPassCounter ?? this.showPassCounter,
-      );
+  }) => StudyOptions(
+    onePerNotePerDay: onePerNotePerDay ?? this.onePerNotePerDay,
+    order: order ?? this.order,
+    newPerDay: identical(newPerDay, _keep) ? this.newPerDay : newPerDay as int?,
+    reviewsPerDay: identical(reviewsPerDay, _keep)
+        ? this.reviewsPerDay
+        : reviewsPerDay as int?,
+    retention: retention ?? this.retention,
+    leechThreshold: leechThreshold ?? this.leechThreshold,
+    leechAction: leechAction ?? this.leechAction,
+    showPassCounter: showPassCounter ?? this.showPassCounter,
+  );
 
   static const _keep = Object();
 
   Map<String, dynamic> toMap() => {
-        'onePerNotePerDay': onePerNotePerDay,
-        'order': order.name,
-        'newPerDay': newPerDay,
-        'reviewsPerDay': reviewsPerDay,
-        'retention': retention,
-        'leechThreshold': leechThreshold,
-        'leechAction': leechAction.name,
-        'showPassCounter': showPassCounter,
-      };
+    'onePerNotePerDay': onePerNotePerDay,
+    'order': order.name,
+    'newPerDay': newPerDay,
+    'reviewsPerDay': reviewsPerDay,
+    'retention': retention,
+    'leechThreshold': leechThreshold,
+    'leechAction': leechAction.name,
+    'showPassCounter': showPassCounter,
+  };
 
   String toJson() => jsonEncode(toMap());
 
@@ -109,7 +107,8 @@ class StudyOptions {
       retention: r is num
           ? r.toDouble().clamp(minRetention, maxRetention)
           : d.retention,
-      leechThreshold: m['leechThreshold'] is int && (m['leechThreshold'] as int) > 0
+      leechThreshold:
+          m['leechThreshold'] is int && (m['leechThreshold'] as int) > 0
           ? m['leechThreshold'] as int
           : d.leechThreshold,
       leechAction: LeechAction.values.firstWhere(

@@ -33,7 +33,9 @@ class ReadingDots extends StatelessWidget {
                     height: 16,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: doc.isRead(i) ? scheme.primary : Colors.transparent,
+                      color: doc.isRead(i)
+                          ? scheme.primary
+                          : Colors.transparent,
                       border: Border.all(
                         color: doc.isRead(i) ? scheme.primary : scheme.outline,
                         width: 1.5,

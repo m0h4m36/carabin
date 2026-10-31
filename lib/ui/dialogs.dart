@@ -26,7 +26,10 @@ Future<String?> promptText(
         onSubmitted: (v) => Navigator.pop(ctx, v),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(Tx.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text(Tx.cancel),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, controller.text),
           child: Text(confirmLabel),
@@ -148,9 +151,14 @@ class _ColorDialogState extends State<_ColorDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text(Tx.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(Tx.cancel),
+        ),
         FilledButton(
-          onPressed: _hexInvalid ? null : () => Navigator.pop(context, _selected),
+          onPressed: _hexInvalid
+              ? null
+              : () => Navigator.pop(context, _selected),
           child: const Text(Tx.validate),
         ),
       ],
@@ -209,7 +217,10 @@ void showInfo(BuildContext context, String message) {
 
 /// Exécute [action] et affiche l'erreur éventuelle ; renvoie vrai si elle a
 /// réussi.
-Future<bool> guarded(BuildContext context, FutureOr<void> Function() action) async {
+Future<bool> guarded(
+  BuildContext context,
+  FutureOr<void> Function() action,
+) async {
   try {
     await action();
     return true;

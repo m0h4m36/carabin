@@ -11,6 +11,7 @@ import '../../l10n/textes_cartes.dart';
 import '../../ui/dialogs.dart';
 import '../../ui/widgets.dart';
 import 'card_text.dart';
+import 'occlusion_view.dart';
 import 'note_editor_page.dart';
 
 /// Les notes d'un deck : recherche, aperçu, pause, modification, suppression.
@@ -401,9 +402,44 @@ class _NoteDetailState extends State<_NoteDetail> {
             ],
           ),
           const SizedBox(height: 20),
-          if (face == null)
-            Text(TxCards.unknownCardType)
-          else ...[
+          if (face == null) ...[
+            Text(
+              TxCards.previewQuestion,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: scheme.outline,
+              ),
+            ),
+            const SizedBox(height: 6),
+            OcclusionView(
+              fields: note.fields,
+              ord: ord,
+              revealed: false,
+              maxHeight: 300,
+            ),
+            const Divider(height: 28),
+            Text(
+              TxCards.previewAnswer,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: scheme.outline,
+              ),
+            ),
+            const SizedBox(height: 6),
+            OcclusionView(
+              fields: note.fields,
+              ord: ord,
+              revealed: true,
+              maxHeight: 300,
+            ),
+            if (note.fields.extra.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              RichFieldText(
+                note.fields.extra,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ] else ...[
             Text(
               TxCards.previewQuestion,
               style: theme.textTheme.labelMedium?.copyWith(
@@ -453,15 +489,19 @@ class _NoteDetailState extends State<_NoteDetail> {
             Wrap(
               spacing: 8,
               children: [
-                for (final c in cards)
+                for (var i = 0; i < cards.length; i++)
                   ChoiceChip(
                     label: Text(
                       note.type == NoteType.cloze
-                          ? TxCards.clozeOrdinal(c.ord)
-                          : TxCards.cardOrdinal(c.ord),
+                          ? TxCards.clozeOrdinal(cards[i].ord)
+                          : TxCards.cardOrdinal(
+                              note.type == NoteType.occlusion
+                                  ? i
+                                  : cards[i].ord,
+                            ),
                     ),
-                    selected: c.ord == ord,
-                    onSelected: (_) => setState(() => _ord = c.ord),
+                    selected: cards[i].ord == ord,
+                    onSelected: (_) => setState(() => _ord = cards[i].ord),
                   ),
               ],
             ),

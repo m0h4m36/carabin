@@ -66,7 +66,8 @@ TextEditingValue toggleFormat(TextEditingValue v, Format f) {
   final before = text.substring(0, start);
   final after = text.substring(end);
   if (_wrappedBy(f, before, after)) {
-    final out = '${before.substring(0, before.length - m.length)}'
+    final out =
+        '${before.substring(0, before.length - m.length)}'
         '${text.substring(start, end)}${after.substring(m.length)}';
     return TextEditingValue(
       text: out,
@@ -82,7 +83,8 @@ TextEditingValue toggleFormat(TextEditingValue v, Format f) {
   final trail = selected.length - selected.trimRight().length;
   if (lead + trail >= selected.length) return v; // que des espaces
   final core = selected.substring(lead, selected.length - trail);
-  final out = '${text.substring(0, start + lead)}$m$core$m'
+  final out =
+      '${text.substring(0, start + lead)}$m$core$m'
       '${text.substring(end - trail)}';
   return TextEditingValue(
     text: out,
@@ -113,6 +115,23 @@ TextEditingValue? insertCloze(TextEditingValue v, int number) {
   final inner = start + '{{c$number::'.length;
   return TextEditingValue(
     text: out,
-    selection: TextSelection(baseOffset: inner, extentOffset: inner + (end - start)),
+    selection: TextSelection(
+      baseOffset: inner,
+      extentOffset: inner + (end - start),
+    ),
+  );
+}
+
+/// Insère [inserted] à la position du curseur (ou à la place de la
+/// sélection) ; le curseur se place juste après. Sans curseur valide, le
+/// texte est ajouté à la fin.
+TextEditingValue insertAtCursor(TextEditingValue v, String inserted) {
+  final sel = v.selection;
+  final start = sel.isValid ? sel.start : v.text.length;
+  final end = sel.isValid ? sel.end : v.text.length;
+  final out = v.text.replaceRange(start, end, inserted);
+  return TextEditingValue(
+    text: out,
+    selection: TextSelection.collapsed(offset: start + inserted.length),
   );
 }

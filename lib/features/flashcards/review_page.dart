@@ -12,18 +12,14 @@ import '../../l10n/textes_cartes.dart';
 import '../../ui/dialogs.dart';
 import '../../ui/widgets.dart';
 import 'card_text.dart';
+import 'occlusion_view.dart';
 import 'note_editor_page.dart';
 import 'review_session.dart';
 
 /// Une séance de révision : les cartes du jour d'un ou plusieurs decks, ou une
 /// liste de cartes imposée (entraînement).
 class ReviewPage extends StatefulWidget {
-  const ReviewPage({
-    super.key,
-    this.deckIds,
-    this.cardIds,
-    this.order,
-  });
+  const ReviewPage({super.key, this.deckIds, this.cardIds, this.order});
 
   final List<int>? deckIds;
   final List<int>? cardIds;
@@ -104,7 +100,10 @@ class _ReviewPageState extends State<ReviewPage> {
     setState(_resetCardState);
     if (result.becameLeech) {
       final suspended = _repo.card(result.undo.cardId).suspended;
-      showInfo(context, suspended ? TxCards.leechNotice : TxCards.leechNoticeKept);
+      showInfo(
+        context,
+        suspended ? TxCards.leechNotice : TxCards.leechNoticeKept,
+      );
     }
   }
 
@@ -148,7 +147,9 @@ class _ReviewPageState extends State<ReviewPage> {
 
   Future<void> _addNote() async {
     final c = _session.current;
-    final deckId = c == null ? widget.deckIds?.firstOrNull : _repo.studyCard(c).note.deckId;
+    final deckId = c == null
+        ? widget.deckIds?.firstOrNull
+        : _repo.studyCard(c).note.deckId;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(builder: (_) => NoteEditorPage(deckId: deckId)),
     );
@@ -156,8 +157,8 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   void _restart() => setState(() {
-        _start();
-      });
+    _start();
+  });
 
   // ---------------------------------------------------------------- clavier
 
@@ -178,7 +179,8 @@ class _ReviewPageState extends State<ReviewPage> {
       _undo();
       return KeyEventResult.handled;
     }
-    if (ctrl && (k == LogicalKeyboardKey.delete || k == LogicalKeyboardKey.backspace)) {
+    if (ctrl &&
+        (k == LogicalKeyboardKey.delete || k == LogicalKeyboardKey.backspace)) {
       _delete();
       return KeyEventResult.handled;
     }
@@ -211,7 +213,8 @@ class _ReviewPageState extends State<ReviewPage> {
       _suspend();
       return KeyEventResult.handled;
     }
-    if (k == LogicalKeyboardKey.minus || k == LogicalKeyboardKey.numpadSubtract) {
+    if (k == LogicalKeyboardKey.minus ||
+        k == LogicalKeyboardKey.numpadSubtract) {
       _bury();
       return KeyEventResult.handled;
     }
@@ -232,9 +235,7 @@ class _ReviewPageState extends State<ReviewPage> {
         body: SafeArea(
           child: Row(
             children: [
-              Expanded(
-                child: _session.finished ? _doneView() : _sessionView(),
-              ),
+              Expanded(child: _session.finished ? _doneView() : _sessionView()),
               if (wide && !_session.finished) _sidePanel(),
             ],
           ),
@@ -257,7 +258,12 @@ class _ReviewPageState extends State<ReviewPage> {
           Expanded(
             child: Center(
               child: Text(
-                TxCards.position(_session.position, _session.initialTotal < _session.position ? _session.position : _session.initialTotal),
+                TxCards.position(
+                  _session.position,
+                  _session.initialTotal < _session.position
+                      ? _session.position
+                      : _session.initialTotal,
+                ),
                 style: theme.textTheme.titleMedium,
               ),
             ),
@@ -317,41 +323,79 @@ class _ReviewPageState extends State<ReviewPage> {
     final meta = StringBuffer(TxCards.typeName(sc.note.type));
     if (options.showPassCounter) {
       meta.write(' · ');
-      meta.write(sc.card.schedule.reps == 0
-          ? TxCards.firstTime()
-          : TxCards.seenTimes(sc.card.schedule.reps, sc.card.schedule.lapses));
+      meta.write(
+        sc.card.schedule.reps == 0
+            ? TxCards.firstTime()
+            : TxCards.seenTimes(sc.card.schedule.reps, sc.card.schedule.lapses),
+      );
       if (sc.note.cardCount > 1) {
         meta.write(' · ');
-        meta.write(sc.note.type == NoteType.cloze
-            ? TxCards.clozeOrdinal(sc.card.ord)
-            : TxCards.cardOrdinal(sc.card.ord));
+        meta.write(switch (sc.note.type) {
+          NoteType.cloze => TxCards.clozeOrdinal(sc.card.ord),
+          NoteType.occlusion => TxCards.cardOrdinal(
+            repo
+                .cardsOfNote(sc.note.id)
+                .indexWhere((c) => c.ord == sc.card.ord),
+          ),
+          _ => TxCards.cardOrdinal(sc.card.ord),
+        });
       }
     }
 
+    final contextBlock = <Widget>[
+      if (face.context.isNotEmpty)
+        if (_showContext)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: RichFieldText(
+              face.context,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          TextButton(
+            onPressed: () => setState(() => _showContext = true),
+            child: const Text(TxCards.showContext),
+          ),
+    ];
+    final extraBlock = <Widget>[
+      if (face.extra.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        RichFieldText(
+          face.extra,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ];
+
     Widget content;
     if (sc.note.type == NoteType.occlusion) {
-      content = Text(TxCards.unknownCardType, style: theme.textTheme.bodyMedium);
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ...contextBlock,
+          OcclusionView(
+            key: ValueKey('occlusion-${sc.card.id}'),
+            fields: sc.note.fields,
+            ord: sc.card.ord,
+            revealed: _revealed,
+          ),
+          if (_revealed) ...extraBlock,
+        ],
+      );
     } else {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (face.context.isNotEmpty) ...[
-            if (_showContext)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: RichFieldText(
-                  face.context,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-                ),
-              )
-            else
-              TextButton(
-                onPressed: () => setState(() => _showContext = true),
-                child: const Text(TxCards.showContext),
-              ),
-          ],
+          ...contextBlock,
           FaceText(face.question),
           if (face.typed) ..._typedBlock(face),
           if (_revealed) ...[
@@ -359,14 +403,7 @@ class _ReviewPageState extends State<ReviewPage> {
             Divider(color: scheme.outlineVariant),
             const SizedBox(height: 20),
             if (!face.typed) FaceText(face.answer),
-            if (face.extra.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              RichFieldText(
-                face.extra,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ],
+            ...extraBlock,
           ],
         ],
       );
@@ -436,7 +473,9 @@ class _ReviewPageState extends State<ReviewPage> {
           const SizedBox(width: 8),
           Text(
             right ? TxCards.typedRight : TxCards.typedWrong,
-            style: theme.textTheme.titleSmall?.copyWith(color: right ? scheme.primary : scheme.error),
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: right ? scheme.primary : scheme.error,
+            ),
           ),
         ],
       ),
@@ -451,20 +490,23 @@ class _ReviewPageState extends State<ReviewPage> {
         ),
       ],
       const SizedBox(height: 8),
-      Text(TxCards.expected, style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline)),
+      Text(
+        TxCards.expected,
+        style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline),
+      ),
       const SizedBox(height: 4),
       FaceText(face.answer),
     ];
   }
 
   Widget _revealButton() => SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: FilledButton(
-          onPressed: _reveal,
-          child: const Text(TxCards.showAnswer),
-        ),
-      );
+    width: double.infinity,
+    height: 56,
+    child: FilledButton(
+      onPressed: _reveal,
+      child: const Text(TxCards.showAnswer),
+    ),
+  );
 
   Widget _gradeButtons(Map<Grade, Duration> delays) {
     final scheme = Theme.of(context).colorScheme;
@@ -472,7 +514,10 @@ class _ReviewPageState extends State<ReviewPage> {
       final label = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(TxCards.gradeLabel(g), style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            TxCards.gradeLabel(g),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 2),
           Text(Tx.interval(delays[g]!), style: const TextStyle(fontSize: 12)),
         ],
@@ -484,11 +529,17 @@ class _ReviewPageState extends State<ReviewPage> {
           child: SizedBox(
             height: 64,
             child: g == Grade.good
-                ? FilledButton(key: ValueKey('grade-$key'), onPressed: onPressed, child: label)
+                ? FilledButton(
+                    key: ValueKey('grade-$key'),
+                    onPressed: onPressed,
+                    child: label,
+                  )
                 : OutlinedButton(
                     key: ValueKey('grade-$key'),
                     style: g == Grade.again
-                        ? OutlinedButton.styleFrom(foregroundColor: scheme.error)
+                        ? OutlinedButton.styleFrom(
+                            foregroundColor: scheme.error,
+                          )
                         : null,
                     onPressed: onPressed,
                     child: label,
@@ -514,29 +565,45 @@ class _ReviewPageState extends State<ReviewPage> {
     final repo = _repo;
     final sc = repo.studyCard(_session.current!);
     final delays = repo.preview(sc.card.id);
-    final secs = _session.answered == 0 ? null : _session.spent.inSeconds / _session.answered;
+    final secs = _session.answered == 0
+        ? null
+        : _session.spent.inSeconds / _session.answered;
     Widget row(String l, String v) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Flexible(
-                child: Text(l, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Text(
+              l,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(v, textAlign: TextAlign.end, style: theme.textTheme.bodyMedium),
-              ),
-            ],
+            ),
           ),
-        );
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              v,
+              textAlign: TextAlign.end,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
     Widget head(String t) => Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 4),
-          child: Text(t, style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary)),
-        );
+      padding: const EdgeInsets.only(top: 16, bottom: 4),
+      child: Text(
+        t,
+        style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary),
+      ),
+    );
     return Container(
       width: 260,
-      decoration: BoxDecoration(border: Border(left: BorderSide(color: scheme.outlineVariant))),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: scheme.outlineVariant)),
+      ),
       padding: const EdgeInsets.all(16),
       child: ListView(
         children: [
@@ -544,15 +611,24 @@ class _ReviewPageState extends State<ReviewPage> {
           row(TxCards.reviewed, '${_session.answered}'),
           row(TxCards.remaining, '${_session.remaining}'),
           row(TxCards.minutes, '${_session.spent.inMinutes}'),
-          row(TxCards.secondsPerCard, secs == null ? '–' : secs.toStringAsFixed(1).replaceAll('.', ',')),
+          row(
+            TxCards.secondsPerCard,
+            secs == null ? '–' : secs.toStringAsFixed(1).replaceAll('.', ','),
+          ),
           head(TxCards.cardPanel),
           row(TxCards.typeLabel, TxCards.typeName(sc.note.type)),
           row(TxCards.passes, '${sc.card.schedule.reps}'),
           row(TxCards.lapsesLabel, '${sc.card.schedule.lapses}'),
           head(TxCards.nextPanel),
-          for (final g in Grade.values) row(TxCards.gradeLabel(g), Tx.interval(delays[g]!)),
+          for (final g in Grade.values)
+            row(TxCards.gradeLabel(g), Tx.interval(delays[g]!)),
           head(TxCards.shortcuts),
-          Text(TxCards.shortcutsLine, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          Text(
+            TxCards.shortcutsLine,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -566,8 +642,15 @@ class _ReviewPageState extends State<ReviewPage> {
       final now = repo.now();
       final a = studyDayStart(next.at);
       final b = studyDayStart(now);
-      final diff = DateTime.utc(a.year, a.month, a.day).difference(DateTime.utc(b.year, b.month, b.day)).inDays;
-      nextText = TxCards.nextReview(TxCards.relativeDay(next.at, diff), next.count);
+      final diff = DateTime.utc(
+        a.year,
+        a.month,
+        a.day,
+      ).difference(DateTime.utc(b.year, b.month, b.day)).inDays;
+      nextText = TxCards.nextReview(
+        TxCards.relativeDay(next.at, diff),
+        next.count,
+      );
     }
     return Column(
       children: [
@@ -604,17 +687,17 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Widget _topBarDone() => Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: TxCards.quit,
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ],
+    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+    child: Row(
+      children: [
+        IconButton(
+          tooltip: TxCards.quit,
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _Pill extends StatelessWidget {

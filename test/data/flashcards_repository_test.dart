@@ -32,8 +32,10 @@ void main() {
       NoteFields({'front': q, 'back': a});
 
   /// Ajoute [n] notes question-réponse dans le paquet.
-  List<NoteRow> addBasics(int deckId, int n, {String prefix = 'Q'}) =>
-      [for (var i = 1; i <= n; i++) repo.addNote(deckId, NoteType.basic, basic('$prefix$i'))];
+  List<NoteRow> addBasics(int deckId, int n, {String prefix = 'Q'}) => [
+    for (var i = 1; i <= n; i++)
+      repo.addNote(deckId, NoteType.basic, basic('$prefix$i')),
+  ];
 
   /// Fait passer une carte neuve en révision (Bien, +11 min, Bien).
   void graduate(int cardId) {
@@ -46,10 +48,16 @@ void main() {
     test('création, renommage et noms uniques', () {
       final d = repo.createDeck('  Cardio   vasculaire ');
       expect(d.name, 'Cardio vasculaire');
-      expect(() => repo.createDeck('cardio vasculaire'), throwsA(isA<NameTakenError>()));
+      expect(
+        () => repo.createDeck('cardio vasculaire'),
+        throwsA(isA<NameTakenError>()),
+      );
       expect(() => repo.createDeck('   '), throwsA(isA<EmptyNameError>()));
       final e = repo.createDeck('Neuro');
-      expect(() => repo.renameDeck(e.id, 'CARDIO VASCULAIRE'), throwsA(isA<NameTakenError>()));
+      expect(
+        () => repo.renameDeck(e.id, 'CARDIO VASCULAIRE'),
+        throwsA(isA<NameTakenError>()),
+      );
       repo.renameDeck(e.id, 'Neurologie');
       expect(repo.deck(e.id).name, 'Neurologie');
       repo.renameDeck(e.id, 'Neurologie'); // même nom : permis
@@ -67,13 +75,20 @@ void main() {
       repo.answer(repo.cardsOfNote(n.first.id).first.id, Grade.good);
       repo.deleteDeck(d.id);
       for (final t in ['notes', 'cards', 'review_logs']) {
-        expect(db.select('SELECT COUNT(*) AS n FROM $t').first['n'], 0, reason: t);
+        expect(
+          db.select('SELECT COUNT(*) AS n FROM $t').first['n'],
+          0,
+          reason: t,
+        );
       }
     });
 
     test('un paquet inconnu lève NotFoundError', () {
       expect(() => repo.deck(999), throwsA(isA<NotFoundError>()));
-      expect(() => repo.addNote(999, NoteType.basic, basic('q')), throwsA(isA<NotFoundError>()));
+      expect(
+        () => repo.addNote(999, NoteType.basic, basic('q')),
+        throwsA(isA<NotFoundError>()),
+      );
     });
   });
 
@@ -93,15 +108,29 @@ void main() {
     test('une note invalide est refusée et rien n\'est enregistré', () {
       final d = repo.createDeck('X');
       expect(
-        () => repo.addNote(d.id, NoteType.cloze, NoteFields({'text': 'pas de trou'})),
-        throwsA(isA<InvalidNoteError>().having((e) => e.issue, 'issue', NoteIssue.noCloze)),
+        () => repo.addNote(
+          d.id,
+          NoteType.cloze,
+          NoteFields({'text': 'pas de trou'}),
+        ),
+        throwsA(
+          isA<InvalidNoteError>().having(
+            (e) => e.issue,
+            'issue',
+            NoteIssue.noCloze,
+          ),
+        ),
       );
       expect(repo.notes(d.id), isEmpty);
     });
 
     test('modifier une note garde l\'historique des cartes qui subsistent', () {
       final d = repo.createDeck('X');
-      final n = repo.addNote(d.id, NoteType.cloze, NoteFields({'text': '{{c1::a}} {{c2::b}}'}));
+      final n = repo.addNote(
+        d.id,
+        NoteType.cloze,
+        NoteFields({'text': '{{c1::a}} {{c2::b}}'}),
+      );
       final c1 = repo.cardsOfNote(n.id).first;
       repo.answer(c1.id, Grade.good);
       // c2 disparaît, c3 apparaît
@@ -115,7 +144,12 @@ void main() {
 
     test('les étiquettes sont nettoyées et sans doublon', () {
       final d = repo.createDeck('X');
-      final n = repo.addNote(d.id, NoteType.basic, basic('q'), tags: ['  cœur ', 'rein pair', 'cœur', '']);
+      final n = repo.addNote(
+        d.id,
+        NoteType.basic,
+        basic('q'),
+        tags: ['  cœur ', 'rein pair', 'cœur', ''],
+      );
       expect(n.tags, ['cœur', 'rein_pair']);
     });
 
@@ -133,8 +167,19 @@ void main() {
       final d = repo.createDeck('X');
       final n = repo.addNote(d.id, NoteType.basic, basic('Q', 'R'));
       expect(repo.hasDuplicate(d.id, NoteType.basic, basic('Q', 'R')), isTrue);
-      expect(repo.hasDuplicate(d.id, NoteType.basic, basic('Q', 'R'), exceptId: n.id), isFalse);
-      expect(repo.hasDuplicate(d.id, NoteType.basic, basic('Q', 'autre')), isFalse);
+      expect(
+        repo.hasDuplicate(
+          d.id,
+          NoteType.basic,
+          basic('Q', 'R'),
+          exceptId: n.id,
+        ),
+        isFalse,
+      );
+      expect(
+        repo.hasDuplicate(d.id, NoteType.basic, basic('Q', 'autre')),
+        isFalse,
+      );
     });
 
     test('déplacer et supprimer une note', () {
@@ -154,7 +199,10 @@ void main() {
     test('le jour change à 4 h', () {
       expect(studyDayStart(DateTime(2030, 3, 1, 9)), DateTime(2030, 3, 1, 4));
       expect(studyDayStart(DateTime(2030, 3, 2, 1)), DateTime(2030, 3, 1, 4));
-      expect(studyDayStart(DateTime(2030, 3, 1, 3, 59)), DateTime(2030, 2, 28, 4));
+      expect(
+        studyDayStart(DateTime(2030, 3, 1, 3, 59)),
+        DateTime(2030, 2, 28, 4),
+      );
       expect(studyDayEnd(DateTime(2030, 3, 1, 9)), DateTime(2030, 3, 2, 4));
     });
   });
@@ -163,7 +211,10 @@ void main() {
     test('les nouvelles cartes respectent le plafond', () {
       final d = repo.createDeck('X');
       addBasics(d.id, 5);
-      repo.setDeckOptions(d.id, const StudyOptions(newPerDay: 2, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(newPerDay: 2, onePerNotePerDay: false),
+      );
       expect(repo.todayQueue(deckIds: [d.id]), hasLength(2));
       final c = repo.counts(deckId: d.id);
       expect(c.newToday, 2);
@@ -174,7 +225,10 @@ void main() {
     test('répondre à une nouvelle carte consomme le plafond du jour', () {
       final d = repo.createDeck('X');
       addBasics(d.id, 5);
-      repo.setDeckOptions(d.id, const StudyOptions(newPerDay: 2, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(newPerDay: 2, onePerNotePerDay: false),
+      );
       var q = repo.todayQueue(deckIds: [d.id]);
       repo.answer(q.first, Grade.good);
       q = repo.todayQueue(deckIds: [d.id]);
@@ -198,7 +252,10 @@ void main() {
     test('le plafond général s\'applique aussi à un paquet sans plafond (le plus strict l\'emporte)', () {
       final d = repo.createDeck('X');
       addBasics(d.id, 30);
-      repo.setDeckOptions(d.id, const StudyOptions(newPerDay: null, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(newPerDay: null, onePerNotePerDay: false),
+      );
       expect(repo.todayQueue(deckIds: [d.id]), hasLength(20));
     });
 
@@ -207,10 +264,15 @@ void main() {
       final b = repo.createDeck('B');
       addBasics(a.id, 4);
       addBasics(b.id, 4, prefix: 'R');
-      repo.setGlobalOptions(const StudyOptions(newPerDay: 5, onePerNotePerDay: false));
+      repo.setGlobalOptions(
+        const StudyOptions(newPerDay: 5, onePerNotePerDay: false),
+      );
       expect(repo.todayQueue(), hasLength(5));
       // un paquet à plafond propre plus strict
-      repo.setDeckOptions(a.id, const StudyOptions(newPerDay: 1, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        a.id,
+        const StudyOptions(newPerDay: 1, onePerNotePerDay: false),
+      );
       expect(repo.todayQueue(deckIds: [a.id]), hasLength(1));
       expect(repo.todayQueue(), hasLength(5));
     });
@@ -231,16 +293,25 @@ void main() {
 
     test('plafond de révisions', () {
       final d = repo.createDeck('X');
-      final ids = [for (final n in addBasics(d.id, 4)) repo.cardsOfNote(n.id).single.id];
+      final ids = [
+        for (final n in addBasics(d.id, 4)) repo.cardsOfNote(n.id).single.id,
+      ];
       ids.forEach(graduate);
-      repo.setDeckOptions(d.id, const StudyOptions(reviewsPerDay: 3, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(reviewsPerDay: 3, onePerNotePerDay: false),
+      );
       now = now.add(const Duration(days: 10));
       expect(repo.todayQueue(deckIds: [d.id]), hasLength(3));
     });
 
     test('une seule carte par notion et par jour', () {
       final d = repo.createDeck('X');
-      final n = repo.addNote(d.id, NoteType.cloze, NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}));
+      final n = repo.addNote(
+        d.id,
+        NoteType.cloze,
+        NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}),
+      );
       var q = repo.todayQueue(deckIds: [d.id]);
       expect(q, hasLength(1));
       expect(repo.counts(deckId: d.id).newToday, 1);
@@ -256,7 +327,11 @@ void main() {
 
     test('règle désactivable', () {
       final d = repo.createDeck('X');
-      repo.addNote(d.id, NoteType.cloze, NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}));
+      repo.addNote(
+        d.id,
+        NoteType.cloze,
+        NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}),
+      );
       repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
       expect(repo.todayQueue(deckIds: [d.id]), hasLength(3));
     });
@@ -278,7 +353,10 @@ void main() {
     test('ordre imposé à la séance', () {
       final d = repo.createDeck('X');
       addBasics(d.id, 3);
-      repo.setDeckOptions(d.id, const StudyOptions(order: StudyOrder.shuffled, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(order: StudyOrder.shuffled, onePerNotePerDay: false),
+      );
       final course = repo.todayQueue(deckIds: [d.id], order: StudyOrder.course);
       expect(course, [...course]..sort());
     });
@@ -286,7 +364,10 @@ void main() {
     test('ordre dans le cours : conserve l\'ordre de création', () {
       final d = repo.createDeck('X');
       final notes = addBasics(d.id, 4);
-      repo.setDeckOptions(d.id, const StudyOptions(order: StudyOrder.course, onePerNotePerDay: false));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(order: StudyOrder.course, onePerNotePerDay: false),
+      );
       final q = repo.todayQueue(deckIds: [d.id]);
       expect(q.map((id) => repo.card(id).noteId), notes.map((n) => n.id));
     });
@@ -304,25 +385,35 @@ void main() {
       expect(repo.learningDue(), [id]);
     });
 
-    test('compteur « à revoir » inclut les cartes en apprentissage proches', () {
-      final d = repo.createDeck('X');
-      final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
-      repo.answer(id, Grade.good); // dans 10 min
-      final c = repo.counts(deckId: d.id);
-      expect(c.due, 1);
-      expect(c.newToday, 0);
-    });
+    test(
+      'compteur « à revoir » inclut les cartes en apprentissage proches',
+      () {
+        final d = repo.createDeck('X');
+        final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
+        repo.answer(id, Grade.good); // dans 10 min
+        final c = repo.counts(deckId: d.id);
+        expect(c.due, 1);
+        expect(c.newToday, 0);
+      },
+    );
 
-    test('sur une notion déjà en apprentissage, pas de nouvelle carte soeur', () {
-      final d = repo.createDeck('X');
-      repo.addNote(d.id, NoteType.cloze, NoteFields({'text': '{{c1::a}} {{c2::b}}'}));
-      final first = repo.todayQueue(deckIds: [d.id]).single;
-      repo.answer(first, Grade.good);
-      now = DateTime(2030, 3, 2, 9);
-      // la carte 1 est en apprentissage depuis la veille : la soeur attend
-      expect(repo.learningDue(), [first]);
-      expect(repo.todayQueue(deckIds: [d.id]), isEmpty);
-    });
+    test(
+      'sur une notion déjà en apprentissage, pas de nouvelle carte soeur',
+      () {
+        final d = repo.createDeck('X');
+        repo.addNote(
+          d.id,
+          NoteType.cloze,
+          NoteFields({'text': '{{c1::a}} {{c2::b}}'}),
+        );
+        final first = repo.todayQueue(deckIds: [d.id]).single;
+        repo.answer(first, Grade.good);
+        now = DateTime(2030, 3, 2, 9);
+        // la carte 1 est en apprentissage depuis la veille : la soeur attend
+        expect(repo.learningDue(), [first]);
+        expect(repo.todayQueue(deckIds: [d.id]), isEmpty);
+      },
+    );
   });
 
   group('réponses', () {
@@ -357,16 +448,19 @@ void main() {
       expect(db.select('SELECT COUNT(*) AS n FROM review_logs').first['n'], 2);
     });
 
-    test('annuler une première réponse rend la carte neuve et le plafond du jour', () {
-      final d = repo.createDeck('X');
-      final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
-      repo.setDeckOptions(d.id, const StudyOptions(newPerDay: 1));
-      final r = repo.answer(id, Grade.good);
-      expect(repo.todayQueue(deckIds: [d.id]), isEmpty);
-      repo.undo(r.undo);
-      expect(repo.card(id).schedule.isNew, isTrue);
-      expect(repo.todayQueue(deckIds: [d.id]), [id]);
-    });
+    test(
+      'annuler une première réponse rend la carte neuve et le plafond du jour',
+      () {
+        final d = repo.createDeck('X');
+        final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
+        repo.setDeckOptions(d.id, const StudyOptions(newPerDay: 1));
+        final r = repo.answer(id, Grade.good);
+        expect(repo.todayQueue(deckIds: [d.id]), isEmpty);
+        repo.undo(r.undo);
+        expect(repo.card(id).schedule.isNew, isTrue);
+        expect(repo.todayQueue(deckIds: [d.id]), [id]);
+      },
+    );
 
     test('carte maudite : mise de côté après N oublis', () {
       final d = repo.createDeck('X');
@@ -394,7 +488,10 @@ void main() {
     test('carte maudite sans action : signalée mais pas suspendue', () {
       final d = repo.createDeck('X');
       final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
-      repo.setDeckOptions(d.id, const StudyOptions(leechThreshold: 1, leechAction: LeechAction.none));
+      repo.setDeckOptions(
+        d.id,
+        const StudyOptions(leechThreshold: 1, leechAction: LeechAction.none),
+      );
       graduate(id);
       now = now.add(const Duration(days: 10));
       final r = repo.answer(id, Grade.again);
@@ -410,8 +507,10 @@ void main() {
       repo.setDeckOptions(other.id, const StudyOptions(retention: 0.97));
       graduate(a);
       graduate(b);
-      final ia = repo.card(a).schedule.dueMs - repo.card(a).schedule.lastReviewMs!;
-      final ib = repo.card(b).schedule.dueMs - repo.card(b).schedule.lastReviewMs!;
+      final ia =
+          repo.card(a).schedule.dueMs - repo.card(a).schedule.lastReviewMs!;
+      final ib =
+          repo.card(b).schedule.dueMs - repo.card(b).schedule.lastReviewMs!;
       expect(ib, lessThan(ia));
     });
 
@@ -442,7 +541,10 @@ void main() {
 
   group('rattrapage', () {
     List<int> overdueCards(int deckId, int n) {
-      final ids = [for (final note in addBasics(deckId, n)) repo.cardsOfNote(note.id).single.id];
+      final ids = [
+        for (final note in addBasics(deckId, n))
+          repo.cardsOfNote(note.id).single.id,
+      ];
       ids.forEach(graduate);
       return ids;
     }
@@ -499,14 +601,19 @@ void main() {
     test('cartes par jour, série et rétention', () {
       final d = repo.createDeck('X');
       repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
-      final ids = [for (final n in addBasics(d.id, 3)) repo.cardsOfNote(n.id).single.id];
+      final ids = [
+        for (final n in addBasics(d.id, 3)) repo.cardsOfNote(n.id).single.id,
+      ];
       repo.answer(ids[0], Grade.good);
       repo.answer(ids[1], Grade.good);
       var per = repo.reviewsPerDay(3);
       expect(per, [0, 0, 2]);
       expect(repo.streak(), 1);
       now = DateTime(2030, 3, 2, 9);
-      expect(repo.streak(), 1); // hier compte tant qu'on n'a pas encore révisé aujourd'hui
+      expect(
+        repo.streak(),
+        1,
+      ); // hier compte tant qu'on n'a pas encore révisé aujourd'hui
       repo.answer(ids[2], Grade.good);
       expect(repo.streak(), 2);
       per = repo.reviewsPerDay(3);
@@ -528,7 +635,9 @@ void main() {
     test('rétention : seules les cartes déjà apprises comptent', () {
       final d = repo.createDeck('X');
       repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
-      final ids = [for (final n in addBasics(d.id, 2)) repo.cardsOfNote(n.id).single.id];
+      final ids = [
+        for (final n in addBasics(d.id, 2)) repo.cardsOfNote(n.id).single.id,
+      ];
       ids.forEach(graduate);
       expect(repo.retention(30).total, 0);
       expect(repo.retention(30).rate, isNull);
@@ -544,14 +653,16 @@ void main() {
     test('stock : neuves, apprentissage, jeunes, mûres', () {
       final d = repo.createDeck('X');
       repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
-      final ids = [for (final n in addBasics(d.id, 4)) repo.cardsOfNote(n.id).single.id];
+      final ids = [
+        for (final n in addBasics(d.id, 4)) repo.cardsOfNote(n.id).single.id,
+      ];
       graduate(ids[0]); // jeune (4 j)
       repo.answer(ids[1], Grade.good); // en apprentissage
       graduate(ids[2]);
-      db.execute(
-        'UPDATE cards SET due = last_review + ? WHERE id = ?',
-        [30 * 86400000, ids[2]],
-      ); // mûre
+      db.execute('UPDATE cards SET due = last_review + ? WHERE id = ?', [
+        30 * 86400000,
+        ids[2],
+      ]); // mûre
       final s = repo.stock();
       expect(s.fresh, 1);
       expect(s.learning, 1);
@@ -582,7 +693,9 @@ void main() {
     test('date de la première échéance et nombre de cartes ce jour-là', () {
       final d = repo.createDeck('X');
       repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
-      final ids = [for (final n in addBasics(d.id, 3)) repo.cardsOfNote(n.id).single.id];
+      final ids = [
+        for (final n in addBasics(d.id, 3)) repo.cardsOfNote(n.id).single.id,
+      ];
       ids.forEach(graduate); // chacune revient dans 4 jours
       final next = repo.nextDue(deckIds: [d.id])!;
       expect(next.count, 3);
@@ -622,13 +735,26 @@ void main() {
     });
 
     test('historique des séances, note sur 20', () {
-      repo.recordPractice(total: 20, correct: 15, durationMs: 90000, deckNames: ['A', 'B']);
-      repo.recordPractice(total: 3, correct: 1, durationMs: 1000, deckNames: ['A']);
+      repo.recordPractice(
+        total: 20,
+        correct: 15,
+        durationMs: 90000,
+        deckNames: ['A', 'B'],
+      );
+      repo.recordPractice(
+        total: 3,
+        correct: 1,
+        durationMs: 1000,
+        deckNames: ['A'],
+      );
       final h = repo.practiceHistory();
       expect(h, hasLength(2));
       expect(h.last.score20, 15);
       expect(h.last.deckNames, 'A, B');
-      expect(h.first.score20, 6.5); // 1/3 × 20 = 6,67 → 6,5 (demi-point le plus proche)
+      expect(
+        h.first.score20,
+        6.5,
+      ); // 1/3 × 20 = 6,67 → 6,5 (demi-point le plus proche)
       repo.deletePractice(h.first.id);
       expect(repo.practiceHistory(), hasLength(1));
     });

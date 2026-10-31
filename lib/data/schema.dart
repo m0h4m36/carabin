@@ -121,4 +121,12 @@ CREATE TABLE practice_sessions (
   deck_names TEXT NOT NULL
 );
 ''',
+
+  // 3 : identifiant stable des notes (échange de paquets entre appareils,
+  // réimport sans doublon)
+  '''
+ALTER TABLE notes ADD COLUMN guid TEXT;
+UPDATE notes SET guid = lower(hex(randomblob(16)));
+CREATE UNIQUE INDEX notes_guid ON notes(guid);
+''',
 ];

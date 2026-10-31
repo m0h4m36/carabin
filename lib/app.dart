@@ -8,6 +8,7 @@ import 'app_session.dart';
 import 'data/courses_repository.dart';
 import 'data/database.dart';
 import 'data/flashcards_repository.dart';
+import 'data/media_store.dart';
 import 'data/settings_repository.dart';
 import 'data/workspace.dart';
 import 'l10n/textes.dart';
@@ -68,10 +69,10 @@ class _CarabinAppState extends State<CarabinApp> {
   }
 
   ThemeMode _mode(String? setting) => switch (setting) {
-        'clair' => ThemeMode.light,
-        'sombre' => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
+    'clair' => ThemeMode.light,
+    'sombre' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -93,27 +94,26 @@ class _CarabinAppState extends State<CarabinApp> {
         ChangeNotifierProvider<AppDatabase>.value(value: session.db),
         Provider<CoursesRepository>.value(value: session.courses),
         Provider<FlashcardsRepository>.value(value: session.flashcards),
+        Provider<MediaStore>.value(value: session.media),
         Provider<SettingsRepository>.value(value: session.settings),
       ],
       child: ListenableBuilder(
         listenable: session.themeMode,
-        builder: (context, _) => _materialApp(
-          _mode(session.themeMode.value),
-          const AppShell(),
-        ),
+        builder: (context, _) =>
+            _materialApp(_mode(session.themeMode.value), const AppShell()),
       ),
     );
   }
 
   Widget _materialApp(ThemeMode mode, Widget home) => MaterialApp(
-        title: Tx.appName,
-        debugShowCheckedModeBanner: false,
-        theme: CarabinTheme.light(),
-        darkTheme: CarabinTheme.dark(),
-        themeMode: mode,
-        locale: const Locale('fr'),
-        supportedLocales: const [Locale('fr')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        home: home,
-      );
+    title: Tx.appName,
+    debugShowCheckedModeBanner: false,
+    theme: CarabinTheme.light(),
+    darkTheme: CarabinTheme.dark(),
+    themeMode: mode,
+    locale: const Locale('fr'),
+    supportedLocales: const [Locale('fr')],
+    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    home: home,
+  );
 }

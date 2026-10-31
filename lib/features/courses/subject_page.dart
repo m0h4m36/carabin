@@ -86,7 +86,7 @@ class SubjectPage extends StatelessWidget {
                     itemCount: topics.length,
                     onReorderItem: (from, to) {
                       final ids = [for (final t in topics) t.id];
-                                      ids.insert(to, ids.removeAt(from));
+                      ids.insert(to, ids.removeAt(from));
                       c.reorder(CourseLevel.topic, ids);
                     },
                     itemBuilder: (context, i) => Padding(
@@ -130,7 +130,10 @@ class _TopicCard extends StatelessWidget {
           initial: topic.name,
         );
         if (name == null || !context.mounted) return;
-        await guarded(context, () => c.rename(CourseLevel.topic, topic.id, name));
+        await guarded(
+          context,
+          () => c.rename(CourseLevel.topic, topic.id, name),
+        );
       case _TopicAction.move:
         final choices = [
           for (final (m, s, y) in c.allSubjects())
@@ -246,7 +249,11 @@ class _TopicCard extends StatelessWidget {
               ListTile(
                 dense: true,
                 leading: Icon(kindIcon(d.kind)),
-                title: Text(d.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(
+                  d.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 trailing: Text('${d.readCount}/${Doc.maxReads}'),
                 onTap: () => openDocument(context, d.id),
               ),
@@ -258,9 +265,9 @@ class _TopicCard extends StatelessWidget {
 }
 
 IconData kindIcon(DocKind k) => switch (k) {
-      DocKind.pdf => Icons.picture_as_pdf_outlined,
-      DocKind.word => Icons.description_outlined,
-      DocKind.image => Icons.image_outlined,
-      DocKind.text => Icons.notes,
-      DocKind.other => Icons.insert_drive_file_outlined,
-    };
+  DocKind.pdf => Icons.picture_as_pdf_outlined,
+  DocKind.word => Icons.description_outlined,
+  DocKind.image => Icons.image_outlined,
+  DocKind.text => Icons.notes,
+  DocKind.other => Icons.insert_drive_file_outlined,
+};

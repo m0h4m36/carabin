@@ -13,13 +13,13 @@ class Deck {
     required this.hasOwnOptions,
   });
   factory Deck.fromRow(Row r) => Deck(
-        id: r['id'] as int,
-        name: r['name'] as String,
-        subjectId: r['subject_id'] as int?,
-        documentId: r['document_id'] as int?,
-        position: r['position'] as int,
-        hasOwnOptions: r['options_json'] != null,
-      );
+    id: r['id'] as int,
+    name: r['name'] as String,
+    subjectId: r['subject_id'] as int?,
+    documentId: r['document_id'] as int?,
+    position: r['position'] as int,
+    hasOwnOptions: r['options_json'] != null,
+  );
   final int id;
   final String name;
   final int? subjectId;
@@ -31,6 +31,7 @@ class Deck {
 class NoteRow {
   const NoteRow({
     required this.id,
+    required this.guid,
     required this.deckId,
     required this.type,
     required this.fields,
@@ -41,20 +42,24 @@ class NoteRow {
     required this.suspendedCount,
   });
   factory NoteRow.fromRow(Row r) => NoteRow(
-        id: r['id'] as int,
-        deckId: r['deck_id'] as int,
-        type: NoteType.values.byName(r['type'] as String),
-        fields: NoteFields.fromJson(r['fields_json'] as String),
-        tags: [
-          for (final t in (r['tags'] as String).split(' '))
-            if (t.isNotEmpty) t,
-        ],
-        documentId: r['document_id'] as int?,
-        createdAtMs: r['created_at'] as int,
-        cardCount: (r['card_count'] as int?) ?? 0,
-        suspendedCount: (r['suspended_count'] as int?) ?? 0,
-      );
+    id: r['id'] as int,
+    guid: (r['guid'] as String?) ?? '',
+    deckId: r['deck_id'] as int,
+    type: NoteType.values.byName(r['type'] as String),
+    fields: NoteFields.fromJson(r['fields_json'] as String),
+    tags: [
+      for (final t in (r['tags'] as String).split(' '))
+        if (t.isNotEmpty) t,
+    ],
+    documentId: r['document_id'] as int?,
+    createdAtMs: r['created_at'] as int,
+    cardCount: (r['card_count'] as int?) ?? 0,
+    suspendedCount: (r['suspended_count'] as int?) ?? 0,
+  );
   final int id;
+
+  /// Identifiant stable de la note, le même sur tous les appareils.
+  final String guid;
   final int deckId;
   final NoteType type;
   final NoteFields fields;
@@ -78,22 +83,22 @@ class CardRow {
     required this.buriedUntilMs,
   });
   factory CardRow.fromRow(Row r) => CardRow(
-        id: r['id'] as int,
-        noteId: r['note_id'] as int,
-        ord: r['ord'] as int,
-        schedule: Schedule(
-          state: r['state'] as int,
-          step: r['step'] as int?,
-          stability: (r['stability'] as num?)?.toDouble(),
-          difficulty: (r['difficulty'] as num?)?.toDouble(),
-          dueMs: r['due'] as int,
-          lastReviewMs: r['last_review'] as int?,
-          reps: r['reps'] as int,
-          lapses: r['lapses'] as int,
-        ),
-        suspended: (r['suspended'] as int) == 1,
-        buriedUntilMs: r['buried_until'] as int?,
-      );
+    id: r['id'] as int,
+    noteId: r['note_id'] as int,
+    ord: r['ord'] as int,
+    schedule: Schedule(
+      state: r['state'] as int,
+      step: r['step'] as int?,
+      stability: (r['stability'] as num?)?.toDouble(),
+      difficulty: (r['difficulty'] as num?)?.toDouble(),
+      dueMs: r['due'] as int,
+      lastReviewMs: r['last_review'] as int?,
+      reps: r['reps'] as int,
+      lapses: r['lapses'] as int,
+    ),
+    suspended: (r['suspended'] as int) == 1,
+    buriedUntilMs: r['buried_until'] as int?,
+  );
   final int id;
   final int noteId;
   final int ord;

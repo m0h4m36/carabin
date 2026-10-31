@@ -19,8 +19,15 @@ const int studyDayRolloverHour = 4;
 /// Début (heure locale) du jour d'étude qui contient [now].
 DateTime studyDayStart(DateTime now) {
   final local = now.toLocal();
-  final base = DateTime(local.year, local.month, local.day, studyDayRolloverHour);
-  return local.isBefore(base) ? DateTime(base.year, base.month, base.day - 1, studyDayRolloverHour) : base;
+  final base = DateTime(
+    local.year,
+    local.month,
+    local.day,
+    studyDayRolloverHour,
+  );
+  return local.isBefore(base)
+      ? DateTime(base.year, base.month, base.day - 1, studyDayRolloverHour)
+      : base;
 }
 
 DateTime studyDayEnd(DateTime now) {
@@ -30,7 +37,12 @@ DateTime studyDayEnd(DateTime now) {
 
 /// Annulation d'une réponse.
 class UndoToken {
-  const UndoToken._(this.cardId, this.previous, this.logId, this.previousBuried);
+  const UndoToken._(
+    this.cardId,
+    this.previous,
+    this.logId,
+    this.previousBuried,
+  );
   final int cardId;
   final CardRow previous;
   final int logId;
@@ -74,9 +86,9 @@ class FlashcardsRepository {
     DateTime Function()? clock,
     SchedulingService? scheduling,
     Random? random,
-  })  : _clock = clock ?? DateTime.now,
-        scheduling = scheduling ?? SchedulingService(),
-        _random = random ?? Random();
+  }) : _clock = clock ?? DateTime.now,
+       scheduling = scheduling ?? SchedulingService(),
+       _random = random ?? Random();
 
   final AppDatabase db;
   final SettingsRepository settings;
@@ -94,11 +106,14 @@ class FlashcardsRepository {
   StudyOptions globalOptions() =>
       StudyOptions.fromJson(settings.get(globalOptionsKey));
 
-  void setGlobalOptions(StudyOptions o) => settings.set(globalOptionsKey, o.toJson());
+  void setGlobalOptions(StudyOptions o) =>
+      settings.set(globalOptionsKey, o.toJson());
 
   /// Réglages propres au paquet, ou null s'il suit les réglages généraux.
   StudyOptions? deckOptions(int deckId) {
-    final rows = db.select('SELECT options_json FROM decks WHERE id = ?', [deckId]);
+    final rows = db.select('SELECT options_json FROM decks WHERE id = ?', [
+      deckId,
+    ]);
     if (rows.isEmpty) throw const NotFoundError();
     final json = rows.first['options_json'] as String?;
     return json == null ? null : StudyOptions.fromJson(json);
@@ -106,7 +121,10 @@ class FlashcardsRepository {
 
   void setDeckOptions(int deckId, StudyOptions? o) {
     db.transaction(() {
-      db.execute('UPDATE decks SET options_json = ? WHERE id = ?', [o?.toJson(), deckId]);
+      db.execute('UPDATE decks SET options_json = ? WHERE id = ?', [
+        o?.toJson(),
+        deckId,
+      ]);
     });
   }
 
@@ -124,7 +142,9 @@ class FlashcardsRepository {
   void _checkDeckName(String name, int? subjectId, {int? exceptId}) {
     final rows = subjectId == null
         ? db.select('SELECT id, name FROM decks WHERE subject_id IS NULL')
-        : db.select('SELECT id, name FROM decks WHERE subject_id = ?', [subjectId]);
+        : db.select('SELECT id, name FROM decks WHERE subject_id = ?', [
+            subjectId,
+          ]);
     for (final r in rows) {
       if (r['id'] == exceptId) continue;
       if (normalize(r['name'] as String) == normalize(name)) {
@@ -134,8 +154,9 @@ class FlashcardsRepository {
   }
 
   List<Deck> decks() => [
-        for (final r in db.select('SELECT * FROM decks ORDER BY position, id')) Deck.fromRow(r),
-      ];
+    for (final r in db.select('SELECT * FROM decks ORDER BY position, id'))
+      Deck.fromRow(r),
+  ];
 
   Deck deck(int id) {
     final rows = db.select('SELECT * FROM decks WHERE id = ?', [id]);
@@ -147,7 +168,13 @@ class FlashcardsRepository {
     final name = _cleanName(rawName);
     _checkDeckName(name, subjectId);
     final id = db.transaction(() {
-      final pos = db.select('SELECT COALESCE(MAX(position), -1) + 1 AS n FROM decks').first['n'] as int;
+      final pos =
+          db
+                  .select(
+                    'SELECT COALESCE(MAX(position), -1) + 1 AS n FROM decks',
+                  )
+                  .first['n']
+              as int;
       db.execute(
         'INSERT INTO decks(name, subject_id, document_id, position, created_at) VALUES (?, ?, ?, ?, ?)',
         [name, subjectId, documentId, pos, _nowMs()],
@@ -161,17 +188,29 @@ class FlashcardsRepository {
     final name = _cleanName(rawName);
     final d = deck(id);
     _checkDeckName(name, d.subjectId, exceptId: id);
-    db.transaction(() => db.execute('UPDATE decks SET name = ? WHERE id = ?', [name, id]));
+    db.transaction(
+      () => db.execute('UPDATE decks SET name = ? WHERE id = ?', [name, id]),
+    );
   }
 
   void setDeckSubject(int id, int? subjectId) {
     final d = deck(id);
     _checkDeckName(d.name, subjectId, exceptId: id);
-    db.transaction(() => db.execute('UPDATE decks SET subject_id = ? WHERE id = ?', [subjectId, id]));
+    db.transaction(
+      () => db.execute('UPDATE decks SET subject_id = ? WHERE id = ?', [
+        subjectId,
+        id,
+      ]),
+    );
   }
 
   void setDeckDocument(int id, int? documentId) {
-    db.transaction(() => db.execute('UPDATE decks SET document_id = ? WHERE id = ?', [documentId, id]));
+    db.transaction(
+      () => db.execute('UPDATE decks SET document_id = ? WHERE id = ?', [
+        documentId,
+        id,
+      ]),
+    );
   }
 
   void deleteDeck(int id) {
@@ -193,7 +232,9 @@ class FlashcardsRepository {
     if (q.isEmpty) return all;
     return [
       for (final n in all)
-        if (normalize(n.preview).contains(q) || normalize(n.tags.join(' ')).contains(q)) n,
+        if (normalize(n.preview).contains(q) ||
+            normalize(n.tags.join(' ')).contains(q))
+          n,
     ];
   }
 
@@ -210,20 +251,35 @@ class FlashcardsRepository {
 
   /// Nombre de notes d'un paquet qui contiennent déjà ce texte (pour
   /// signaler un doublon à l'utilisateur).
-  bool hasDuplicate(int deckId, NoteType type, NoteFields fields, {int? exceptId}) {
-    final key = plainText(type, fields);
+  bool hasDuplicate(
+    int deckId,
+    NoteType type,
+    NoteFields fields, {
+    int? exceptId,
+  }) {
+    final key = duplicateKey(type, fields);
     for (final n in notes(deckId)) {
-      if (n.id != exceptId && n.type == type && plainText(n.type, n.fields) == key) {
+      if (n.id != exceptId &&
+          n.type == type &&
+          duplicateKey(n.type, n.fields) == key) {
         return true;
       }
     }
     return false;
   }
 
+  static final _secure = Random.secure();
+
+  /// Identifiant aléatoire de 128 bits, en hexadécimal.
+  static String newGuid() => [
+    for (var i = 0; i < 16; i++)
+      _secure.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
+
   String _tagString(List<String> tags) => {
-        for (final t in tags)
-          if (t.trim().isNotEmpty) t.trim().replaceAll(RegExp(r'\s+'), '_'),
-      }.join(' ');
+    for (final t in tags)
+      if (t.trim().isNotEmpty) t.trim().replaceAll(RegExp(r'\s+'), '_'),
+  }.join(' ');
 
   /// Ajoute une note et fabrique ses cartes (neuves).
   NoteRow addNote(
@@ -239,9 +295,18 @@ class FlashcardsRepository {
     final nowMs = _nowMs();
     final id = db.transaction(() {
       db.execute(
-        'INSERT INTO notes(deck_id, type, fields_json, tags, document_id, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [deckId, type.name, fields.toJson(), _tagString(tags), documentId, nowMs, nowMs],
+        'INSERT INTO notes(guid, deck_id, type, fields_json, tags, document_id, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          newGuid(),
+          deckId,
+          type.name,
+          fields.toJson(),
+          _tagString(tags),
+          documentId,
+          nowMs,
+          nowMs,
+        ],
       );
       final noteId = db.lastInsertId;
       for (final ord in cardOrdinals(type, fields)) {
@@ -271,13 +336,24 @@ class FlashcardsRepository {
     db.transaction(() {
       db.execute(
         'UPDATE notes SET fields_json = ?, tags = ?, updated_at = ? WHERE id = ?',
-        [fields.toJson(), tags == null ? _tagString(n.tags) : _tagString(tags), nowMs, noteId],
+        [
+          fields.toJson(),
+          tags == null ? _tagString(n.tags) : _tagString(tags),
+          nowMs,
+          noteId,
+        ],
       );
       final existing = {
-        for (final r in db.select('SELECT ord FROM cards WHERE note_id = ?', [noteId])) r['ord'] as int,
+        for (final r in db.select('SELECT ord FROM cards WHERE note_id = ?', [
+          noteId,
+        ]))
+          r['ord'] as int,
       };
       for (final ord in existing.difference(wanted)) {
-        db.execute('DELETE FROM cards WHERE note_id = ? AND ord = ?', [noteId, ord]);
+        db.execute('DELETE FROM cards WHERE note_id = ? AND ord = ?', [
+          noteId,
+          ord,
+        ]);
       }
       for (final ord in wanted.difference(existing)) {
         _insertCard(noteId, ord, nowMs);
@@ -286,20 +362,30 @@ class FlashcardsRepository {
   }
 
   void deleteNote(int noteId) {
-    db.transaction(() => db.execute('DELETE FROM notes WHERE id = ?', [noteId]));
+    db.transaction(
+      () => db.execute('DELETE FROM notes WHERE id = ?', [noteId]),
+    );
   }
 
   void moveNote(int noteId, int deckId) {
     deck(deckId);
-    db.transaction(() => db.execute('UPDATE notes SET deck_id = ? WHERE id = ?', [deckId, noteId]));
+    db.transaction(
+      () => db.execute('UPDATE notes SET deck_id = ? WHERE id = ?', [
+        deckId,
+        noteId,
+      ]),
+    );
   }
 
   // ----------------------------------------------------------------- cartes
 
   List<CardRow> cardsOfNote(int noteId) => [
-        for (final r in db.select('SELECT * FROM cards WHERE note_id = ? ORDER BY ord', [noteId]))
-          CardRow.fromRow(r),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM cards WHERE note_id = ? ORDER BY ord',
+      [noteId],
+    ))
+      CardRow.fromRow(r),
+  ];
 
   CardRow card(int id) {
     final rows = db.select('SELECT * FROM cards WHERE id = ?', [id]);
@@ -315,13 +401,19 @@ class FlashcardsRepository {
   /// Met en pause (ou rétablit) toutes les cartes d'une notion.
   void setNoteSuspended(int noteId, bool suspended) {
     db.transaction(() {
-      db.execute('UPDATE cards SET suspended = ? WHERE note_id = ?', [suspended ? 1 : 0, noteId]);
+      db.execute('UPDATE cards SET suspended = ? WHERE note_id = ?', [
+        suspended ? 1 : 0,
+        noteId,
+      ]);
     });
   }
 
   void setCardSuspended(int cardId, bool suspended) {
     db.transaction(() {
-      db.execute('UPDATE cards SET suspended = ? WHERE id = ?', [suspended ? 1 : 0, cardId]);
+      db.execute('UPDATE cards SET suspended = ? WHERE id = ?', [
+        suspended ? 1 : 0,
+        cardId,
+      ]);
     });
   }
 
@@ -329,7 +421,10 @@ class FlashcardsRepository {
   void buryNote(int noteId) {
     final until = studyDayEnd(_clock()).toUtc().millisecondsSinceEpoch;
     db.transaction(() {
-      db.execute('UPDATE cards SET buried_until = ? WHERE note_id = ?', [until, noteId]);
+      db.execute('UPDATE cards SET buried_until = ? WHERE note_id = ?', [
+        until,
+        noteId,
+      ]);
     });
   }
 
@@ -344,29 +439,35 @@ class FlashcardsRepository {
   }
 
   int _countLogs(String where, List<Object?> params) =>
-      db.select('SELECT COUNT(*) AS n FROM review_logs l JOIN cards c ON c.id = l.card_id '
-          'JOIN notes n ON n.id = c.note_id WHERE $where', params).first['n'] as int;
+      db
+              .select(
+                'SELECT COUNT(*) AS n FROM review_logs l JOIN cards c ON c.id = l.card_id '
+                'JOIN notes n ON n.id = c.note_id WHERE $where',
+                params,
+              )
+              .first['n']
+          as int;
 
   int newDoneToday(int deckId) => _countLogs(
-        'n.deck_id = ? AND l.state_before = 0 AND l.reviewed_at >= ?',
-        [deckId, studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
-      );
+    'n.deck_id = ? AND l.state_before = 0 AND l.reviewed_at >= ?',
+    [deckId, studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
+  );
 
   int reviewsDoneToday(int deckId) => _countLogs(
-        'n.deck_id = ? AND l.state_before = 2 AND l.reviewed_at >= ?',
-        [deckId, studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
-      );
+    'n.deck_id = ? AND l.state_before = 2 AND l.reviewed_at >= ?',
+    [deckId, studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
+  );
 
   /// Identifiants des notes déjà révisées aujourd'hui (règle « une carte par
   /// notion et par jour »).
   Set<int> _notesStudiedToday() => {
-        for (final r in db.select(
-          'SELECT DISTINCT c.note_id AS id FROM review_logs l JOIN cards c ON c.id = l.card_id '
-          'WHERE l.reviewed_at >= ?',
-          [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
-        ))
-          r['id'] as int,
-      };
+    for (final r in db.select(
+      'SELECT DISTINCT c.note_id AS id FROM review_logs l JOIN cards c ON c.id = l.card_id '
+      'WHERE l.reviewed_at >= ?',
+      [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
+    ))
+      r['id'] as int,
+  };
 
   /// Cartes en apprentissage dont l'heure est venue (ou presque).
   List<int> learningDue({List<int>? deckIds, Duration ahead = Duration.zero}) {
@@ -414,16 +515,23 @@ class FlashcardsRepository {
 
     for (final deckId in ids) {
       final opts = effectiveOptions(deckId);
-      int? reviewLeft = opts.reviewsPerDay == null ? null : opts.reviewsPerDay! - reviewsDoneToday(deckId);
-      int? newLeft = opts.newPerDay == null ? null : opts.newPerDay! - newDoneToday(deckId);
+      int? reviewLeft = opts.reviewsPerDay == null
+          ? null
+          : opts.reviewsPerDay! - reviewsDoneToday(deckId);
+      int? newLeft = opts.newPerDay == null
+          ? null
+          : opts.newPerDay! - newDoneToday(deckId);
       if (globalReviewLeft != null) {
-        reviewLeft = reviewLeft == null ? globalReviewLeft : min(reviewLeft, globalReviewLeft);
+        reviewLeft = reviewLeft == null
+            ? globalReviewLeft
+            : min(reviewLeft, globalReviewLeft);
       }
       if (globalNewLeft != null) {
         newLeft = newLeft == null ? globalNewLeft : min(newLeft, globalNewLeft);
       }
       bool usable(int noteId) =>
-          !opts.onePerNotePerDay || (!studied.contains(noteId) && !seenNotes.contains(noteId));
+          !opts.onePerNotePerDay ||
+          (!studied.contains(noteId) && !seenNotes.contains(noteId));
 
       final dueRows = db.select(
         'SELECT c.id, c.note_id FROM cards c JOIN notes n ON n.id = c.note_id '
@@ -465,15 +573,19 @@ class FlashcardsRepository {
     return [...reviews, ...news];
   }
 
-  int _globalNewDone() => db.select(
-        'SELECT COUNT(*) AS n FROM review_logs WHERE state_before = 0 AND reviewed_at >= ?',
-        [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
-      ).first['n'] as int;
+  int _globalNewDone() =>
+      db.select(
+            'SELECT COUNT(*) AS n FROM review_logs WHERE state_before = 0 AND reviewed_at >= ?',
+            [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
+          ).first['n']
+          as int;
 
-  int _globalReviewsDone() => db.select(
-        'SELECT COUNT(*) AS n FROM review_logs WHERE state_before = 2 AND reviewed_at >= ?',
-        [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
-      ).first['n'] as int;
+  int _globalReviewsDone() =>
+      db.select(
+            'SELECT COUNT(*) AS n FROM review_logs WHERE state_before = 2 AND reviewed_at >= ?',
+            [studyDayStart(_clock()).toUtc().millisecondsSinceEpoch],
+          ).first['n']
+          as int;
 
   /// Compteurs du jour pour un paquet ou pour tous.
   DeckCounts counts({int? deckId}) {
@@ -482,19 +594,31 @@ class FlashcardsRepository {
     final learning = learningDue(deckIds: deckIds, ahead: learnAhead).length;
     final params = <Object?>[];
     final f = _deckFilter(deckIds, params);
-    final total = db.select(
-      'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id WHERE 1 = 1$f',
-      params,
-    ).first['n'] as int;
-    final notesCount = db.select(
-      'SELECT COUNT(*) AS n FROM notes n WHERE 1 = 1$f',
-      params,
-    ).first['n'] as int;
-    final newTotal = db.select(
-      'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id '
-      'WHERE c.state = 0 AND c.suspended = 0$f',
-      params,
-    ).first['n'] as int;
+    final total =
+        db
+                .select(
+                  'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id WHERE 1 = 1$f',
+                  params,
+                )
+                .first['n']
+            as int;
+    final notesCount =
+        db
+                .select(
+                  'SELECT COUNT(*) AS n FROM notes n WHERE 1 = 1$f',
+                  params,
+                )
+                .first['n']
+            as int;
+    final newTotal =
+        db
+                .select(
+                  'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id '
+                  'WHERE c.state = 0 AND c.suspended = 0$f',
+                  params,
+                )
+                .first['n']
+            as int;
     // parmi les cartes du jour, lesquelles sont neuves ?
     var newToday = 0;
     if (today.isNotEmpty) {
@@ -518,36 +642,48 @@ class FlashcardsRepository {
   NextDue? nextDue({List<int>? deckIds}) {
     final params = <Object?>[_nowMs()];
     final f = _deckFilter(deckIds, params);
-    final first = db.select(
-      'SELECT MIN(c.due) AS d FROM cards c JOIN notes n ON n.id = c.note_id '
-      'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ?$f',
-      params,
-    ).first['d'];
+    final first = db
+        .select(
+          'SELECT MIN(c.due) AS d FROM cards c JOIN notes n ON n.id = c.note_id '
+          'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ?$f',
+          params,
+        )
+        .first['d'];
     if (first == null) return null;
     final firstDue = DateTime.fromMillisecondsSinceEpoch(first as int);
     final endMs = studyDayEnd(firstDue).toUtc().millisecondsSinceEpoch;
     final params2 = <Object?>[_nowMs(), endMs];
     final f2 = _deckFilter(deckIds, params2);
-    final count = db.select(
-      'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id '
-      'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ? AND c.due < ?$f2',
-      params2,
-    ).first['n'] as int;
+    final count =
+        db
+                .select(
+                  'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id '
+                  'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ? AND c.due < ?$f2',
+                  params2,
+                )
+                .first['n']
+            as int;
     return NextDue(firstDue, count);
   }
 
   /// Cartes jugées difficiles : difficulté FSRS élevée ou souvent oubliées.
-  int hardCardCount() => db.select(
-        'SELECT COUNT(*) AS n FROM cards WHERE state IN (2, 3) AND suspended = 0 '
-        'AND (difficulty >= 8 OR lapses >= 3)',
-      ).first['n'] as int;
+  int hardCardCount() =>
+      db
+              .select(
+                'SELECT COUNT(*) AS n FROM cards WHERE state IN (2, 3) AND suspended = 0 '
+                'AND (difficulty >= 8 OR lapses >= 3)',
+              )
+              .first['n']
+          as int;
 
   /// Durée moyenne d'une réponse, en secondes (8 s tant qu'on n'a pas de mesure).
   double averageSecondsPerCard() {
-    final r = db.select(
-      'SELECT AVG(duration_ms) AS a FROM (SELECT duration_ms FROM review_logs '
-      'WHERE duration_ms IS NOT NULL AND duration_ms > 0 ORDER BY id DESC LIMIT 200)',
-    ).first['a'];
+    final r = db
+        .select(
+          'SELECT AVG(duration_ms) AS a FROM (SELECT duration_ms FROM review_logs '
+          'WHERE duration_ms IS NOT NULL AND duration_ms > 0 ORDER BY id DESC LIMIT 200)',
+        )
+        .first['a'];
     return r == null ? 8 : (r as num).toDouble() / 1000;
   }
 
@@ -582,15 +718,24 @@ class FlashcardsRepository {
     final nowMs = _nowMs();
     var leech = false;
     final logId = db.transaction(() {
-      final suspend = opts.leechAction == LeechAction.suspend &&
+      final suspend =
+          opts.leechAction == LeechAction.suspend &&
           s.lapses >= opts.leechThreshold &&
           s.lapses > before.schedule.lapses;
-      leech = s.lapses >= opts.leechThreshold && s.lapses > before.schedule.lapses;
+      leech =
+          s.lapses >= opts.leechThreshold && s.lapses > before.schedule.lapses;
       db.execute(
         'UPDATE cards SET state = ?, step = ?, stability = ?, difficulty = ?, due = ?, '
         'last_review = ?, reps = ?, lapses = ?, suspended = ?, buried_until = NULL WHERE id = ?',
         [
-          s.state, s.step, s.stability, s.difficulty, s.dueMs, s.lastReviewMs, s.reps, s.lapses,
+          s.state,
+          s.step,
+          s.stability,
+          s.difficulty,
+          s.dueMs,
+          s.lastReviewMs,
+          s.reps,
+          s.lapses,
           suspend ? 1 : (before.suspended ? 1 : 0),
           cardId,
         ],
@@ -599,13 +744,23 @@ class FlashcardsRepository {
         'INSERT INTO review_logs(card_id, rating, reviewed_at, state_before, duration_ms, due_before, interval_days) '
         'VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
-          cardId, grade.value, nowMs, before.schedule.state, durationMs, before.schedule.dueMs,
+          cardId,
+          grade.value,
+          nowMs,
+          before.schedule.state,
+          durationMs,
+          before.schedule.dueMs,
           out.interval.inMinutes / 1440,
         ],
       );
       return db.lastInsertId;
     });
-    return AnswerResult(UndoToken._(cardId, before, logId, before.buriedUntilMs), s, out.interval, leech);
+    return AnswerResult(
+      UndoToken._(cardId, before, logId, before.buriedUntilMs),
+      s,
+      out.interval,
+      leech,
+    );
   }
 
   /// Annule la réponse décrite par [token] (état de la carte et historique).
@@ -616,8 +771,17 @@ class FlashcardsRepository {
         'UPDATE cards SET state = ?, step = ?, stability = ?, difficulty = ?, due = ?, '
         'last_review = ?, reps = ?, lapses = ?, suspended = ?, buried_until = ? WHERE id = ?',
         [
-          p.state, p.step, p.stability, p.difficulty, p.dueMs, p.lastReviewMs, p.reps, p.lapses,
-          token.previous.suspended ? 1 : 0, token.previousBuried, token.cardId,
+          p.state,
+          p.step,
+          p.stability,
+          p.difficulty,
+          p.dueMs,
+          p.lastReviewMs,
+          p.reps,
+          p.lapses,
+          token.previous.suspended ? 1 : 0,
+          token.previousBuried,
+          token.cardId,
         ],
       );
       db.execute('DELETE FROM review_logs WHERE id = ?', [token.logId]);
@@ -628,7 +792,10 @@ class FlashcardsRepository {
 
   /// Décale de [days] jours l'échéance des cartes en retard.
   int postponeOverdue(int days, {int? deckId}) {
-    final params = <Object?>[days * 86400000, studyDayStart(_clock()).toUtc().millisecondsSinceEpoch];
+    final params = <Object?>[
+      days * 86400000,
+      studyDayStart(_clock()).toUtc().millisecondsSinceEpoch,
+    ];
     var where = 'state = 2 AND due < ?';
     if (deckId != null) {
       where += ' AND note_id IN (SELECT id FROM notes WHERE deck_id = ?)';
@@ -653,7 +820,10 @@ class FlashcardsRepository {
       for (var i = 0; i < rows.length; i++) {
         final day = (i * days) ~/ rows.length; // 0 .. days-1
         final newDue = startMs + (day + 1) * 86400000;
-        db.execute('UPDATE cards SET due = ? WHERE id = ?', [newDue, rows[i]['id']]);
+        db.execute('UPDATE cards SET due = ? WHERE id = ?', [
+          newDue,
+          rows[i]['id'],
+        ]);
       }
     });
     return rows.length;
@@ -663,9 +833,12 @@ class FlashcardsRepository {
   /// ramenées avant, étalées sur les jours qui restent. Ne touche qu'aux dates.
   int applyDeadline(int deckId, DateTime deadline) {
     final startMs = studyDayStart(_clock()).toUtc().millisecondsSinceEpoch;
-    final endOfDeadline = DateTime(deadline.year, deadline.month, deadline.day, studyDayRolloverHour)
-        .toUtc()
-        .millisecondsSinceEpoch;
+    final endOfDeadline = DateTime(
+      deadline.year,
+      deadline.month,
+      deadline.day,
+      studyDayRolloverHour,
+    ).toUtc().millisecondsSinceEpoch;
     final daysLeft = ((endOfDeadline - startMs) / 86400000).floor();
     if (daysLeft < 1) return 0;
     final rows = db.select(
@@ -677,7 +850,10 @@ class FlashcardsRepository {
     db.transaction(() {
       for (var i = 0; i < rows.length; i++) {
         final day = (i * daysLeft) ~/ rows.length;
-        db.execute('UPDATE cards SET due = ? WHERE id = ?', [startMs + (day + 1) * 86400000, rows[i]['id']]);
+        db.execute('UPDATE cards SET due = ? WHERE id = ?', [
+          startMs + (day + 1) * 86400000,
+          rows[i]['id'],
+        ]);
       }
     });
     return rows.length;
@@ -691,12 +867,28 @@ class FlashcardsRepository {
     final today = studyDayStart(_clock());
     final out = <int>[];
     for (var i = days - 1; i >= 0; i--) {
-      final s = DateTime(today.year, today.month, today.day - i, studyDayRolloverHour);
-      final e = DateTime(today.year, today.month, today.day - i + 1, studyDayRolloverHour);
-      out.add(db.select(
-        'SELECT COUNT(*) AS n FROM review_logs WHERE reviewed_at >= ? AND reviewed_at < ?',
-        [s.toUtc().millisecondsSinceEpoch, e.toUtc().millisecondsSinceEpoch],
-      ).first['n'] as int);
+      final s = DateTime(
+        today.year,
+        today.month,
+        today.day - i,
+        studyDayRolloverHour,
+      );
+      final e = DateTime(
+        today.year,
+        today.month,
+        today.day - i + 1,
+        studyDayRolloverHour,
+      );
+      out.add(
+        db.select(
+              'SELECT COUNT(*) AS n FROM review_logs WHERE reviewed_at >= ? AND reviewed_at < ?',
+              [
+                s.toUtc().millisecondsSinceEpoch,
+                e.toUtc().millisecondsSinceEpoch,
+              ],
+            ).first['n']
+            as int,
+      );
     }
     return out;
   }
@@ -718,7 +910,10 @@ class FlashcardsRepository {
   /// Part des cartes déjà apprises retrouvées (réponse autre que « Encore »)
   /// sur les [days] derniers jours.
   RetentionStats retention(int days) {
-    final since = _clock().subtract(Duration(days: days)).toUtc().millisecondsSinceEpoch;
+    final since = _clock()
+        .subtract(Duration(days: days))
+        .toUtc()
+        .millisecondsSinceEpoch;
     final r = db.select(
       'SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN rating > 1 THEN 1 ELSE 0 END), 0) AS ok '
       'FROM review_logs WHERE state_before = 2 AND reviewed_at >= ?',
@@ -730,14 +925,16 @@ class FlashcardsRepository {
   /// Cartes neuves / en apprentissage / jeunes / mûres (mûre : intervalle de
   /// 21 jours ou plus).
   StockStats stock() {
-    final r = db.select(
-      'SELECT '
-      'COALESCE(SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END), 0) AS fresh, '
-      'COALESCE(SUM(CASE WHEN state IN (1, 3) THEN 1 ELSE 0 END), 0) AS learning, '
-      'COALESCE(SUM(CASE WHEN state = 2 AND (due - last_review) < 21 * 86400000 THEN 1 ELSE 0 END), 0) AS young, '
-      'COALESCE(SUM(CASE WHEN state = 2 AND (due - last_review) >= 21 * 86400000 THEN 1 ELSE 0 END), 0) AS mature '
-      'FROM cards WHERE suspended = 0',
-    ).first;
+    final r = db
+        .select(
+          'SELECT '
+          'COALESCE(SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END), 0) AS fresh, '
+          'COALESCE(SUM(CASE WHEN state IN (1, 3) THEN 1 ELSE 0 END), 0) AS learning, '
+          'COALESCE(SUM(CASE WHEN state = 2 AND (due - last_review) < 21 * 86400000 THEN 1 ELSE 0 END), 0) AS young, '
+          'COALESCE(SUM(CASE WHEN state = 2 AND (due - last_review) >= 21 * 86400000 THEN 1 ELSE 0 END), 0) AS mature '
+          'FROM cards WHERE suspended = 0',
+        )
+        .first;
     return StockStats(
       fresh: r['fresh'] as int,
       learning: r['learning'] as int,
@@ -777,7 +974,12 @@ class FlashcardsRepository {
   }
 
   /// Enregistre une séance « Se tester » (rien n'est reprogrammé).
-  void recordPractice({required int total, required int correct, required int durationMs, required List<String> deckNames}) {
+  void recordPractice({
+    required int total,
+    required int correct,
+    required int durationMs,
+    required List<String> deckNames,
+  }) {
     db.transaction(() {
       db.execute(
         'INSERT INTO practice_sessions(taken_at, total, correct, duration_ms, deck_names) VALUES (?, ?, ?, ?, ?)',
@@ -787,19 +989,23 @@ class FlashcardsRepository {
   }
 
   List<PracticeRecord> practiceHistory() => [
-        for (final r in db.select('SELECT * FROM practice_sessions ORDER BY taken_at DESC, id DESC'))
-          PracticeRecord(
-            id: r['id'] as int,
-            takenAtMs: r['taken_at'] as int,
-            total: r['total'] as int,
-            correct: r['correct'] as int,
-            durationMs: r['duration_ms'] as int,
-            deckNames: r['deck_names'] as String,
-          ),
-      ];
+    for (final r in db.select(
+      'SELECT * FROM practice_sessions ORDER BY taken_at DESC, id DESC',
+    ))
+      PracticeRecord(
+        id: r['id'] as int,
+        takenAtMs: r['taken_at'] as int,
+        total: r['total'] as int,
+        correct: r['correct'] as int,
+        durationMs: r['duration_ms'] as int,
+        deckNames: r['deck_names'] as String,
+      ),
+  ];
 
   void deletePractice(int id) {
-    db.transaction(() => db.execute('DELETE FROM practice_sessions WHERE id = ?', [id]));
+    db.transaction(
+      () => db.execute('DELETE FROM practice_sessions WHERE id = ?', [id]),
+    );
   }
 }
 

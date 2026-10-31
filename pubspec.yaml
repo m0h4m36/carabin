@@ -44,6 +44,9 @@ dependencies:
   intl: ^0.20.3
   flutter_localizations:
     sdk: flutter
+  libcompress: ^2.0.0
+  archive: ^4.5.2
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:

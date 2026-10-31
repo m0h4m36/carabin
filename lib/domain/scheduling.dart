@@ -18,8 +18,7 @@ enum Grade {
   const Grade(this.value);
   final int value;
 
-  static Grade fromValue(int v) =>
-      Grade.values.firstWhere((g) => g.value == v);
+  static Grade fromValue(int v) => Grade.values.firstWhere((g) => g.value == v);
 
   fsrs.Rating get _rating => fsrs.Rating.fromValue(value);
 }
@@ -70,12 +69,9 @@ class SchedulingService {
   final Map<double, fsrs.Scheduler> _cache = {};
 
   fsrs.Scheduler _scheduler(double retention) => _cache.putIfAbsent(
-        retention,
-        () => fsrs.Scheduler(
-          desiredRetention: retention,
-          enableFuzzing: false,
-        ),
-      );
+    retention,
+    () => fsrs.Scheduler(desiredRetention: retention, enableFuzzing: false),
+  );
 
   fsrs.Card _toCard(int id, Schedule s, DateTime now) {
     if (s.isNew) {
@@ -137,9 +133,9 @@ class SchedulingService {
     DateTime now, {
     required double retention,
   }) => {
-        for (final g in Grade.values)
-          g: answer(cardId, current, g, now, retention: retention).interval,
-      };
+    for (final g in Grade.values)
+      g: answer(cardId, current, g, now, retention: retention).interval,
+  };
 
   /// Probabilité de se souvenir de la carte à l'instant [now] (0 à 1).
   double retrievability(Schedule s, DateTime now) {

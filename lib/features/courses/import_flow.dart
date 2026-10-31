@@ -6,8 +6,18 @@ import '../../l10n/textes.dart';
 import '../../ui/dialogs.dart';
 
 const importExtensions = [
-  'pdf', 'doc', 'docx', 'odt', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp',
-  'txt', 'md',
+  'pdf',
+  'doc',
+  'docx',
+  'odt',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'bmp',
+  'txt',
+  'md',
 ];
 
 /// Ouvre le sélecteur de fichiers et importe les choix dans un thème.

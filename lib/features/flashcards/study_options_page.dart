@@ -27,7 +27,11 @@ class StudyOptionsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(deckName == null ? TxCards.generalSettings : TxCards.deckSettings(deckName)),
+        title: Text(
+          deckName == null
+              ? TxCards.generalSettings
+              : TxCards.deckSettings(deckName),
+        ),
       ),
       body: Align(
         alignment: Alignment.topCenter,
@@ -40,9 +44,12 @@ class StudyOptionsPage extends StatelessWidget {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text(TxCards.ownSettings),
-                  subtitle: own == null ? const Text(TxCards.followsGeneral) : const Text(TxCards.strictestWins),
+                  subtitle: own == null
+                      ? const Text(TxCards.followsGeneral)
+                      : const Text(TxCards.strictestWins),
                   value: own != null,
-                  onChanged: (on) => repo.setDeckOptions(id, on ? general : null),
+                  onChanged: (on) =>
+                      repo.setDeckOptions(id, on ? general : null),
                 ),
                 const Divider(),
               ],
@@ -114,9 +121,15 @@ class OptionsForm extends StatefulWidget {
 
 class _OptionsFormState extends State<OptionsForm> {
   late StudyOptions _o = widget.options;
-  late final _new = TextEditingController(text: '${widget.options.newPerDay ?? ''}');
-  late final _reviews = TextEditingController(text: '${widget.options.reviewsPerDay ?? ''}');
-  late final _leech = TextEditingController(text: '${widget.options.leechThreshold}');
+  late final _new = TextEditingController(
+    text: '${widget.options.newPerDay ?? ''}',
+  );
+  late final _reviews = TextEditingController(
+    text: '${widget.options.reviewsPerDay ?? ''}',
+  );
+  late final _leech = TextEditingController(
+    text: '${widget.options.leechThreshold}',
+  );
 
   @override
   void dispose() {
@@ -150,7 +163,10 @@ class _OptionsFormState extends State<OptionsForm> {
               enabled: widget.enabled && !unlimited,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.end,
-              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
               onChanged: (t) {
                 final n = int.tryParse(t.trim());
                 if (n != null && n >= 0) onChanged(n);
@@ -194,18 +210,28 @@ class _OptionsFormState extends State<OptionsForm> {
           title: const Text(TxCards.onePerNote),
           subtitle: const Text(TxCards.onePerNoteDetail),
           value: _o.onePerNotePerDay,
-          onChanged: enabled ? (v) => _set(_o.copyWith(onePerNotePerDay: v)) : null,
+          onChanged: enabled
+              ? (v) => _set(_o.copyWith(onePerNotePerDay: v))
+              : null,
         ),
         const SizedBox(height: 8),
         Text(TxCards.studyOrder, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         SegmentedButton<StudyOrder>(
           segments: const [
-            ButtonSegment(value: StudyOrder.shuffled, label: Text(TxCards.orderShuffled)),
-            ButtonSegment(value: StudyOrder.course, label: Text(TxCards.orderCourse)),
+            ButtonSegment(
+              value: StudyOrder.shuffled,
+              label: Text(TxCards.orderShuffled),
+            ),
+            ButtonSegment(
+              value: StudyOrder.course,
+              label: Text(TxCards.orderCourse),
+            ),
           ],
           selected: {_o.order},
-          onSelectionChanged: enabled ? (s) => _set(_o.copyWith(order: s.first)) : null,
+          onSelectionChanged: enabled
+              ? (s) => _set(_o.copyWith(order: s.first))
+              : null,
         ),
         const SizedBox(height: 16),
         _cap(
@@ -225,15 +251,22 @@ class _OptionsFormState extends State<OptionsForm> {
           Text(
             TxCards.loadEstimate(load, _o.reviewsPerDay),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: _o.reviewsPerDay != null && load > _o.reviewsPerDay! ? scheme.error : scheme.onSurfaceVariant,
+              color: _o.reviewsPerDay != null && load > _o.reviewsPerDay!
+                  ? scheme.error
+                  : scheme.onSurfaceVariant,
             ),
           ),
         ],
         const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(child: Text(TxCards.retention, style: theme.textTheme.titleSmall)),
-            Text(TxCards.retentionValue(_o.retention), style: theme.textTheme.titleMedium),
+            Expanded(
+              child: Text(TxCards.retention, style: theme.textTheme.titleSmall),
+            ),
+            Text(
+              TxCards.retentionValue(_o.retention),
+              style: theme.textTheme.titleMedium,
+            ),
           ],
         ),
         Slider(
@@ -242,19 +275,31 @@ class _OptionsFormState extends State<OptionsForm> {
           max: StudyOptions.maxRetention,
           divisions: 27,
           label: TxCards.retentionValue(_o.retention),
-          onChanged: enabled ? (v) => _set(_o.copyWith(retention: double.parse(v.toStringAsFixed(2)))) : null,
+          onChanged: enabled
+              ? (v) => _set(
+                  _o.copyWith(retention: double.parse(v.toStringAsFixed(2))),
+                )
+              : null,
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(TxCards.retentionLow, style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline)),
-            Text(TxCards.retentionHigh, style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline)),
+            Text(
+              TxCards.retentionLow,
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline),
+            ),
+            Text(
+              TxCards.retentionHigh,
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline),
+            ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           TxCards.milestones(milestones),
-          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 20),
         Text(TxCards.leechTitle, style: theme.textTheme.titleSmall),
@@ -269,7 +314,10 @@ class _OptionsFormState extends State<OptionsForm> {
                 enabled: enabled,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.end,
-                decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
                 onChanged: (t) {
                   final n = int.tryParse(t.trim());
                   if (n != null && n > 0) _set(_o.copyWith(leechThreshold: n));
@@ -281,18 +329,28 @@ class _OptionsFormState extends State<OptionsForm> {
         const SizedBox(height: 8),
         SegmentedButton<LeechAction>(
           segments: const [
-            ButtonSegment(value: LeechAction.suspend, label: Text(TxCards.leechSuspend)),
-            ButtonSegment(value: LeechAction.none, label: Text(TxCards.leechNone)),
+            ButtonSegment(
+              value: LeechAction.suspend,
+              label: Text(TxCards.leechSuspend),
+            ),
+            ButtonSegment(
+              value: LeechAction.none,
+              label: Text(TxCards.leechNone),
+            ),
           ],
           selected: {_o.leechAction},
-          onSelectionChanged: enabled ? (s) => _set(_o.copyWith(leechAction: s.first)) : null,
+          onSelectionChanged: enabled
+              ? (s) => _set(_o.copyWith(leechAction: s.first))
+              : null,
         ),
         const SizedBox(height: 12),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text(TxCards.showPassCounter),
           value: _o.showPassCounter,
-          onChanged: enabled ? (v) => _set(_o.copyWith(showPassCounter: v)) : null,
+          onChanged: enabled
+              ? (v) => _set(_o.copyWith(showPassCounter: v))
+              : null,
         ),
       ],
     );

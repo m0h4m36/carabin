@@ -41,9 +41,7 @@ class _CoursesPageState extends State<CoursesPage> {
 /// Ouvre un document en plein écran (au-dessus de la barre de navigation).
 void openDocument(BuildContext context, int docId) {
   Navigator.of(context, rootNavigator: true).push(
-    MaterialPageRoute<void>(
-      builder: (_) => DocumentViewerPage(docId: docId),
-    ),
+    MaterialPageRoute<void>(builder: (_) => DocumentViewerPage(docId: docId)),
   );
 }
 
@@ -143,17 +141,17 @@ class _CoursesHomeState extends State<CoursesHome> {
             child: query.isNotEmpty
                 ? _Results(hits: courses.searchDocuments(query))
                 : years.isEmpty
-                    ? EmptyState(
-                        icon: Icons.menu_book_outlined,
-                        title: Tx.coursesEmptyTitle,
-                        message: Tx.coursesEmptyBody,
-                        action: FilledButton.icon(
-                          onPressed: () => _newYear(courses),
-                          icon: const Icon(Icons.add),
-                          label: const Text(Tx.newYear),
-                        ),
-                      )
-                    : _YearsList(years: years, courses: courses),
+                ? EmptyState(
+                    icon: Icons.menu_book_outlined,
+                    title: Tx.coursesEmptyTitle,
+                    message: Tx.coursesEmptyBody,
+                    action: FilledButton.icon(
+                      onPressed: () => _newYear(courses),
+                      icon: const Icon(Icons.add),
+                      label: const Text(Tx.newYear),
+                    ),
+                  )
+                : _YearsList(years: years, courses: courses),
           ),
         ],
       ),

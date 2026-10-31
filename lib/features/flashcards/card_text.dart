@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/note_types.dart';
+import 'card_image.dart';
 
 const _open = '';
 const _close = '';
@@ -10,15 +11,33 @@ final _placeholder = RegExp('$_open(\\d+)$_close');
 List<InlineSpan> richSpans(String text, TextStyle base, ColorScheme scheme) {
   return [
     for (final run in parseRich(text))
-      if (run.text.isNotEmpty) _runSpan(run, base, scheme),
+      if (run.image != null)
+        _imageSpan(run.image!)
+      else if (run.text.isNotEmpty)
+        _runSpan(run, base, scheme),
   ];
 }
 
-TextSpan _runSpan(RichRun run, TextStyle base, ColorScheme scheme, [TextStyle? extra]) {
+InlineSpan _imageSpan(String name) => WidgetSpan(
+  alignment: PlaceholderAlignment.middle,
+  child: Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: CardImage(name),
+  ),
+);
+
+TextSpan _runSpan(
+  RichRun run,
+  TextStyle base,
+  ColorScheme scheme, [
+  TextStyle? extra,
+]) {
   var style = base;
   if (run.bold) style = style.copyWith(fontWeight: FontWeight.w700);
   if (run.italic) style = style.copyWith(fontStyle: FontStyle.italic);
-  if (run.underline) style = style.copyWith(decoration: TextDecoration.underline);
+  if (run.underline) {
+    style = style.copyWith(decoration: TextDecoration.underline);
+  }
   if (run.highlight) {
     style = style.copyWith(
       backgroundColor: scheme.tertiaryContainer,
@@ -49,25 +68,56 @@ List<InlineSpan> faceSpans(
   }
   final spans = <InlineSpan>[];
   for (final run in parseRich(buffer.toString())) {
+    if (run.image != null) {
+      spans.add(_imageSpan(run.image!));
+      continue;
+    }
     var last = 0;
     for (final m in _placeholder.allMatches(run.text)) {
       if (m.start > last) {
-        spans.add(_runSpan(RichRun(run.text.substring(last, m.start),
-            bold: run.bold, italic: run.italic, underline: run.underline, highlight: run.highlight), base, scheme));
+        spans.add(
+          _runSpan(
+            RichRun(
+              run.text.substring(last, m.start),
+              bold: run.bold,
+              italic: run.italic,
+              underline: run.underline,
+              highlight: run.highlight,
+            ),
+            base,
+            scheme,
+          ),
+        );
       }
       final seg = special[int.parse(m.group(1)!)]!;
       spans.add(_clozeSpan(seg, run, base, scheme));
       last = m.end;
     }
     if (last < run.text.length) {
-      spans.add(_runSpan(RichRun(run.text.substring(last),
-          bold: run.bold, italic: run.italic, underline: run.underline, highlight: run.highlight), base, scheme));
+      spans.add(
+        _runSpan(
+          RichRun(
+            run.text.substring(last),
+            bold: run.bold,
+            italic: run.italic,
+            underline: run.underline,
+            highlight: run.highlight,
+          ),
+          base,
+          scheme,
+        ),
+      );
     }
   }
   return spans;
 }
 
-InlineSpan _clozeSpan(FaceSegment seg, RichRun outer, TextStyle base, ColorScheme scheme) {
+InlineSpan _clozeSpan(
+  FaceSegment seg,
+  RichRun outer,
+  TextStyle base,
+  ColorScheme scheme,
+) {
   final hidden = seg.role == SegmentRole.hidden;
   final accent = scheme.primary;
   final extra = TextStyle(
@@ -76,25 +126,36 @@ InlineSpan _clozeSpan(FaceSegment seg, RichRun outer, TextStyle base, ColorSchem
     backgroundColor: hidden ? scheme.primaryContainer : null,
   );
   final inner = parseRich(seg.text);
-  return TextSpan(children: [
-    for (final r in inner)
-      if (r.text.isNotEmpty)
-        _runSpan(
-          RichRun(r.text,
+  return TextSpan(
+    children: [
+      for (final r in inner)
+        if (r.image != null)
+          _imageSpan(r.image!)
+        else if (r.text.isNotEmpty)
+          _runSpan(
+            RichRun(
+              r.text,
               bold: r.bold || outer.bold,
               italic: r.italic || outer.italic,
               underline: r.underline || outer.underline,
-              highlight: false),
-          base,
-          scheme,
-          extra,
-        ),
-  ]);
+              highlight: false,
+            ),
+            base,
+            scheme,
+            extra,
+          ),
+    ],
+  );
 }
 
 /// Une face de carte (question ou réponse), centrée et lisible.
 class FaceText extends StatelessWidget {
-  const FaceText(this.segments, {super.key, this.style, this.textAlign = TextAlign.center});
+  const FaceText(
+    this.segments, {
+    super.key,
+    this.style,
+    this.textAlign = TextAlign.center,
+  });
   final List<FaceSegment> segments;
   final TextStyle? style;
   final TextAlign textAlign;
@@ -102,7 +163,13 @@ class FaceText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final base = style ?? theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w400, height: 1.5) ?? const TextStyle();
+    final base =
+        style ??
+        theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w400,
+          height: 1.5,
+        ) ??
+        const TextStyle();
     return Text.rich(
       TextSpan(children: faceSpans(segments, base, theme.colorScheme)),
       textAlign: textAlign,
@@ -112,7 +179,12 @@ class FaceText extends StatelessWidget {
 
 /// Un champ libre (complément, contexte) en texte mis en forme.
 class RichFieldText extends StatelessWidget {
-  const RichFieldText(this.text, {super.key, this.style, this.textAlign = TextAlign.start});
+  const RichFieldText(
+    this.text, {
+    super.key,
+    this.style,
+    this.textAlign = TextAlign.start,
+  });
   final String text;
   final TextStyle? style;
   final TextAlign textAlign;

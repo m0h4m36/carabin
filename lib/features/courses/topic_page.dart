@@ -75,7 +75,7 @@ class TopicPage extends StatelessWidget {
                     itemCount: docs.length,
                     onReorderItem: (from, to) {
                       final ids = [for (final d in docs) d.id];
-                                      ids.insert(to, ids.removeAt(from));
+                      ids.insert(to, ids.removeAt(from));
                       c.reorderDocuments(ids);
                     },
                     itemBuilder: (context, i) => _DocTile(
@@ -215,10 +215,19 @@ class _DocTile extends StatelessWidget {
                 tooltip: Tx.more,
                 onSelected: (a) => _action(context, c, a),
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: _DocAction.open, child: Text(Tx.openDocument)),
-                  PopupMenuItem(value: _DocAction.rename, child: Text(Tx.rename)),
+                  PopupMenuItem(
+                    value: _DocAction.open,
+                    child: Text(Tx.openDocument),
+                  ),
+                  PopupMenuItem(
+                    value: _DocAction.rename,
+                    child: Text(Tx.rename),
+                  ),
                   PopupMenuItem(value: _DocAction.move, child: Text(Tx.moveTo)),
-                  PopupMenuItem(value: _DocAction.archive, child: Text(Tx.archiveDoc)),
+                  PopupMenuItem(
+                    value: _DocAction.archive,
+                    child: Text(Tx.archiveDoc),
+                  ),
                   PopupMenuItem(
                     value: _DocAction.deleteForever,
                     child: Text(Tx.deleteForever),

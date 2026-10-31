@@ -161,7 +161,10 @@ class _SemesterSection extends StatelessWidget {
           destructive: true,
         );
         if (!ok || !context.mounted) return;
-        await guarded(context, () => c.delete(CourseLevel.semester, semester.id));
+        await guarded(
+          context,
+          () => c.delete(CourseLevel.semester, semester.id),
+        );
     }
   }
 
@@ -212,7 +215,11 @@ class _SemesterSection extends StatelessWidget {
                 for (final m in subjects)
                   SizedBox(
                     width: 280,
-                    child: SubjectCard(subject: m, year: year, semester: semester),
+                    child: SubjectCard(
+                      subject: m,
+                      year: year,
+                      semester: semester,
+                    ),
                   ),
               ],
             ),

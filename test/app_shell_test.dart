@@ -7,8 +7,9 @@ import 'support/test_session.dart';
 
 void main() {
   group('Cadre de l\'application', () {
-    testWidgets('grand écran : barre latérale avec les cinq modules',
-        (tester) async {
+    testWidgets('grand écran : barre latérale avec les cinq modules', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -48,8 +49,9 @@ void main() {
       expect(find.text('Agenda et méthode des J.'), findsOneWidget);
     });
 
-    testWidgets('le module Cours garde sa page quand on change d\'onglet',
-        (tester) async {
+    testWidgets('le module Cours garde sa page quand on change d\'onglet', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);

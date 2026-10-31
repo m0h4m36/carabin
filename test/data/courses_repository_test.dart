@@ -49,15 +49,17 @@ void main() {
   }
 
   group('noms', () {
-    test('safeFileName remplace les caractères interdits et les noms réservés',
-        () {
-      expect(safeFileName('TP: 1/2?'), 'TP_ 1_2_');
-      expect(safeFileName('  '), '_');
-      expect(safeFileName('CON'), '_CON');
-      expect(safeFileName('nul.txt'), '_nul.txt');
-      expect(safeFileName('Fin.'), 'Fin');
-      expect(safeFileName('a' * 300).length, 100);
-    });
+    test(
+      'safeFileName remplace les caractères interdits et les noms réservés',
+      () {
+        expect(safeFileName('TP: 1/2?'), 'TP_ 1_2_');
+        expect(safeFileName('  '), '_');
+        expect(safeFileName('CON'), '_CON');
+        expect(safeFileName('nul.txt'), '_nul.txt');
+        expect(safeFileName('Fin.'), 'Fin');
+        expect(safeFileName('a' * 300).length, 100);
+      },
+    );
 
     test('normalize retire accents et majuscules', () {
       expect(normalize('Ostéologie Œdème'), 'osteologie oedeme');
@@ -79,22 +81,24 @@ void main() {
       expect(repo.years().single.name, 'DFGSM2 2025-2026');
     });
 
-    test('refuse un nom vide, un doublon (même en majuscules) ou équivalent',
-        () {
-      final y = repo.createYear('A');
-      expect(() => repo.createYear('   '), throwsA(isA<EmptyNameError>()));
-      expect(() => repo.createYear('a'), throwsA(isA<NameTakenError>()));
-      repo.createYear('A/B');
-      expect(() => repo.createYear('A?B'), throwsA(isA<NameTakenError>()));
-      expect(repo.years(), hasLength(2));
-      // pas de dossier orphelin pour la tentative refusée
-      expect(
-        Directory(p.join(ws.coursDir, 'a')).existsSync() ||
-            Directory(p.join(ws.coursDir, 'A')).existsSync(),
-        isTrue,
-      );
-      expect(y.id, isPositive);
-    });
+    test(
+      'refuse un nom vide, un doublon (même en majuscules) ou équivalent',
+      () {
+        final y = repo.createYear('A');
+        expect(() => repo.createYear('   '), throwsA(isA<EmptyNameError>()));
+        expect(() => repo.createYear('a'), throwsA(isA<NameTakenError>()));
+        repo.createYear('A/B');
+        expect(() => repo.createYear('A?B'), throwsA(isA<NameTakenError>()));
+        expect(repo.years(), hasLength(2));
+        // pas de dossier orphelin pour la tentative refusée
+        expect(
+          Directory(p.join(ws.coursDir, 'a')).existsSync() ||
+              Directory(p.join(ws.coursDir, 'A')).existsSync(),
+          isTrue,
+        );
+        expect(y.id, isPositive);
+      },
+    );
 
     test('un nom avec des espaces multiples est nettoyé', () {
       final y = repo.createYear('  Année   2026  ');
@@ -114,9 +118,9 @@ void main() {
       );
       expect(File(ws.absolute(after.relPath)).existsSync(), isTrue);
       expect(
-        Directory(p.join(ws.coursDir, 'DFGSM2 2025-2026', 'Semestre 3',
-                'Anatomie'))
-            .existsSync(),
+        Directory(
+          p.join(ws.coursDir, 'DFGSM2 2025-2026', 'Semestre 3', 'Anatomie'),
+        ).existsSync(),
         isFalse,
       );
     });
@@ -137,26 +141,38 @@ void main() {
         () => repo.rename(CourseLevel.topic, c.topic, 'MYOLOGIE'),
         throwsA(isA<NameTakenError>()),
       );
-      expect(repo.topics(c.subject).map((t) => t.name),
-          ['Ostéologie', 'Myologie']);
+      expect(repo.topics(c.subject).map((t) => t.name), [
+        'Ostéologie',
+        'Myologie',
+      ]);
     });
 
-    test('un dossier déjà présent sur le disque bloque le renommage proprement',
-        () async {
-      final c = chain();
-      final doc = await repo.importFile(c.topic, makeFile('poly.pdf').path);
-      Directory(p.join(ws.coursDir, 'DFGSM2 2025-2026', 'Semestre 3',
-              'Anatomie', 'Autre'))
-          .createSync();
-      expect(
-        () => repo.rename(CourseLevel.topic, c.topic, 'Autre'),
-        throwsA(isA<FileProblemError>()),
-      );
-      // base et fichier restent cohérents
-      expect(repo.topics(c.subject).first.name, 'Ostéologie');
-      expect(File(ws.absolute(repo.document(doc.id)!.relPath)).existsSync(),
-          isTrue);
-    });
+    test(
+      'un dossier déjà présent sur le disque bloque le renommage proprement',
+      () async {
+        final c = chain();
+        final doc = await repo.importFile(c.topic, makeFile('poly.pdf').path);
+        Directory(
+          p.join(
+            ws.coursDir,
+            'DFGSM2 2025-2026',
+            'Semestre 3',
+            'Anatomie',
+            'Autre',
+          ),
+        ).createSync();
+        expect(
+          () => repo.rename(CourseLevel.topic, c.topic, 'Autre'),
+          throwsA(isA<FileProblemError>()),
+        );
+        // base et fichier restent cohérents
+        expect(repo.topics(c.subject).first.name, 'Ostéologie');
+        expect(
+          File(ws.absolute(repo.document(doc.id)!.relPath)).existsSync(),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('import', () {
@@ -183,14 +199,22 @@ void main() {
 
     test('type de document reconnu', () async {
       final c = chain();
-      expect((await repo.importFile(c.topic, makeFile('a.DOCX').path)).kind,
-          DocKind.word);
-      expect((await repo.importFile(c.topic, makeFile('b.jpeg').path)).kind,
-          DocKind.image);
-      expect((await repo.importFile(c.topic, makeFile('c.txt').path)).kind,
-          DocKind.text);
-      expect((await repo.importFile(c.topic, makeFile('d.xyz').path)).kind,
-          DocKind.other);
+      expect(
+        (await repo.importFile(c.topic, makeFile('a.DOCX').path)).kind,
+        DocKind.word,
+      );
+      expect(
+        (await repo.importFile(c.topic, makeFile('b.jpeg').path)).kind,
+        DocKind.image,
+      );
+      expect(
+        (await repo.importFile(c.topic, makeFile('c.txt').path)).kind,
+        DocKind.text,
+      );
+      expect(
+        (await repo.importFile(c.topic, makeFile('d.xyz').path)).kind,
+        DocKind.other,
+      );
     });
 
     test('un fichier inexistant est refusé', () async {
@@ -238,34 +262,43 @@ void main() {
       expect(repo.topics(c.subject), isEmpty);
     });
 
-    test('refuse de déplacer un thème vers une matière qui a le même nom',
-        () {
+    test('refuse de déplacer un thème vers une matière qui a le même nom', () {
       final c = chain();
       final m2 = repo.createSubject(c.sem, 'Histologie', color: 0xFF1E88E5);
       repo.createTopic(m2.id, 'ostéologie');
-      expect(() => repo.moveTopic(c.topic, m2.id),
-          throwsA(isA<NameTakenError>()));
+      expect(
+        () => repo.moveTopic(c.topic, m2.id),
+        throwsA(isA<NameTakenError>()),
+      );
     });
   });
 
   group('suppression et archives', () {
-    test('supprimer un thème archive ses documents sans rien effacer',
-        () async {
-      final c = chain();
-      final doc = await repo.importFile(c.topic, makeFile('poly.pdf').path);
-      repo.delete(CourseLevel.topic, c.topic);
-      final after = repo.document(doc.id)!;
-      expect(after.archivedAt, isNotNull);
-      expect(after.relPath.startsWith('Archives/Cours/'), isTrue);
-      expect(File(ws.absolute(after.relPath)).existsSync(), isTrue);
-      expect(repo.topics(c.subject), isEmpty);
-      expect(
-        Directory(p.join(ws.coursDir, 'DFGSM2 2025-2026', 'Semestre 3',
-                'Anatomie', 'Ostéologie'))
-            .existsSync(),
-        isFalse,
-      );
-    });
+    test(
+      'supprimer un thème archive ses documents sans rien effacer',
+      () async {
+        final c = chain();
+        final doc = await repo.importFile(c.topic, makeFile('poly.pdf').path);
+        repo.delete(CourseLevel.topic, c.topic);
+        final after = repo.document(doc.id)!;
+        expect(after.archivedAt, isNotNull);
+        expect(after.relPath.startsWith('Archives/Cours/'), isTrue);
+        expect(File(ws.absolute(after.relPath)).existsSync(), isTrue);
+        expect(repo.topics(c.subject), isEmpty);
+        expect(
+          Directory(
+            p.join(
+              ws.coursDir,
+              'DFGSM2 2025-2026',
+              'Semestre 3',
+              'Anatomie',
+              'Ostéologie',
+            ),
+          ).existsSync(),
+          isFalse,
+        );
+      },
+    );
 
     test('supprimer une année archive tout ce qu\'elle contient', () async {
       final c = chain();
@@ -355,16 +388,28 @@ void main() {
   });
 
   group('synchroniser', () {
-    test('reprend un PDF déposé à la main et crée les dossiers inconnus',
-        () {
+    test('reprend un PDF déposé à la main et crée les dossiers inconnus', () {
       final c = chain();
-      final dir = Directory(p.join(ws.coursDir, 'DFGSM2 2025-2026',
-          'Semestre 3', 'Anatomie', 'Ostéologie'));
+      final dir = Directory(
+        p.join(
+          ws.coursDir,
+          'DFGSM2 2025-2026',
+          'Semestre 3',
+          'Anatomie',
+          'Ostéologie',
+        ),
+      );
       File(p.join(dir.path, 'depose.pdf')).writeAsStringSync('x');
       File(p.join(dir.path, '.cache')).writeAsStringSync('x');
-      final neuf = Directory(p.join(
-          ws.coursDir, 'DFGSM2 2025-2026', 'Semestre 4', 'Biochimie', 'ADN'))
-        ..createSync(recursive: true);
+      final neuf = Directory(
+        p.join(
+          ws.coursDir,
+          'DFGSM2 2025-2026',
+          'Semestre 4',
+          'Biochimie',
+          'ADN',
+        ),
+      )..createSync(recursive: true);
       File(p.join(neuf.path, 'adn.pdf')).writeAsStringSync('x');
 
       final report = repo.syncFolder();

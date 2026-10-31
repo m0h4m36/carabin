@@ -10,7 +10,7 @@ packages:
     source: hosted
     version: "2.1.2"
   archive:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: archive
       sha256: "0d58d1fa1fddf6588251ccf2819f3fb3b6d0452c1b2813ac7413a05592bfbefe"
@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "0.3.5+5"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: e3626ae6270383c9e3a549f34c9e4cd26c09ae6a9adaab2bf4737a00340efdc4
@@ -317,6 +317,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  libcompress:
+    dependency: "direct main"
+    description:
+      name: libcompress
+      sha256: "5029b3c16e96ef3805deb9acc82a49e89afddbb54791d038394d5877692711e6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   lints:
     dependency: transitive
     description:

@@ -3,10 +3,10 @@ import 'package:sqlite3/sqlite3.dart';
 class Year {
   const Year({required this.id, required this.name, required this.position});
   factory Year.fromRow(Row r) => Year(
-        id: r['id'] as int,
-        name: r['name'] as String,
-        position: r['position'] as int,
-      );
+    id: r['id'] as int,
+    name: r['name'] as String,
+    position: r['position'] as int,
+  );
   final int id;
   final String name;
   final int position;
@@ -20,11 +20,11 @@ class Semester {
     required this.position,
   });
   factory Semester.fromRow(Row r) => Semester(
-        id: r['id'] as int,
-        yearId: r['year_id'] as int,
-        name: r['name'] as String,
-        position: r['position'] as int,
-      );
+    id: r['id'] as int,
+    yearId: r['year_id'] as int,
+    name: r['name'] as String,
+    position: r['position'] as int,
+  );
   final int id;
   final int yearId;
   final String name;
@@ -41,13 +41,13 @@ class Subject {
     this.examDate,
   });
   factory Subject.fromRow(Row r) => Subject(
-        id: r['id'] as int,
-        semesterId: r['semester_id'] as int,
-        name: r['name'] as String,
-        color: r['color'] as int,
-        position: r['position'] as int,
-        examDate: r['exam_date'] as String?,
-      );
+    id: r['id'] as int,
+    semesterId: r['semester_id'] as int,
+    name: r['name'] as String,
+    color: r['color'] as int,
+    position: r['position'] as int,
+    examDate: r['exam_date'] as String?,
+  );
   final int id;
   final int semesterId;
   final String name;
@@ -68,11 +68,11 @@ class Topic {
     required this.position,
   });
   factory Topic.fromRow(Row r) => Topic(
-        id: r['id'] as int,
-        subjectId: r['subject_id'] as int,
-        name: r['name'] as String,
-        position: r['position'] as int,
-      );
+    id: r['id'] as int,
+    subjectId: r['subject_id'] as int,
+    name: r['name'] as String,
+    position: r['position'] as int,
+  );
   final int id;
   final int subjectId;
   final String name;
@@ -120,19 +120,19 @@ class Doc {
     required this.archivedAt,
   });
   factory Doc.fromRow(Row r) => Doc(
-        id: r['id'] as int,
-        topicId: r['topic_id'] as int?,
-        title: r['title'] as String,
-        kind: DocKind.values.byName(r['kind'] as String),
-        relPath: r['rel_path'] as String,
-        sizeBytes: r['size_bytes'] as int,
-        pageCount: r['page_count'] as int?,
-        readsMask: r['reads_mask'] as int,
-        position: r['position'] as int,
-        importedAt: r['imported_at'] as String,
-        lastOpenedAt: r['last_opened_at'] as String?,
-        archivedAt: r['archived_at'] as String?,
-      );
+    id: r['id'] as int,
+    topicId: r['topic_id'] as int?,
+    title: r['title'] as String,
+    kind: DocKind.values.byName(r['kind'] as String),
+    relPath: r['rel_path'] as String,
+    sizeBytes: r['size_bytes'] as int,
+    pageCount: r['page_count'] as int?,
+    readsMask: r['reads_mask'] as int,
+    position: r['position'] as int,
+    importedAt: r['imported_at'] as String,
+    lastOpenedAt: r['last_opened_at'] as String?,
+    archivedAt: r['archived_at'] as String?,
+  );
   final int id;
   final int? topicId;
   final String title;

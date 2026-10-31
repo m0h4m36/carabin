@@ -115,7 +115,10 @@ class ReviewSession {
     );
   }
 
-  int get remaining => _queue.length + _learning.length + (_current != null && _source == _Source.queue ? 1 : 0);
+  int get remaining =>
+      _queue.length +
+      _learning.length +
+      (_current != null && _source == _Source.queue ? 1 : 0);
 
   /// Les quatre délais de la carte affichée.
   Map<Grade, Duration> get preview => repo.preview(_current!);
@@ -140,7 +143,8 @@ class ReviewSession {
     if (_current != null) _shown.add(_current!);
   }
 
-  void _dropLearning(int cardId) => _learning.removeWhere((l) => l.cardId == cardId);
+  void _dropLearning(int cardId) =>
+      _learning.removeWhere((l) => l.cardId == cardId);
 
   /// Remet la carte affichée en tête de sa source avant d'en afficher une autre.
   void _putBackCurrent() {
@@ -157,8 +161,11 @@ class ReviewSession {
     final result = repo.answer(id, grade, durationMs: capped);
     _dropLearning(id);
     final s = result.schedule;
-    final inLearning = s.state == CardState.learning || s.state == CardState.relearning;
-    final soon = s.dueMs <= repo.now().toUtc().millisecondsSinceEpoch + learnAhead.inMilliseconds;
+    final inLearning =
+        s.state == CardState.learning || s.state == CardState.relearning;
+    final soon =
+        s.dueMs <=
+        repo.now().toUtc().millisecondsSinceEpoch + learnAhead.inMilliseconds;
     if (inLearning && soon) _learning.add(_Learning(id, s.dueMs));
     _history.add(_Done(result.undo, capped ?? 0));
     _answered++;
@@ -217,7 +224,9 @@ class ReviewSession {
   void deleteCurrent() {
     final id = _current!;
     final noteId = repo.card(id).noteId;
-    _history.removeWhere((h) => repo.cardsOfNote(noteId).any((c) => c.id == h.token.cardId));
+    _history.removeWhere(
+      (h) => repo.cardsOfNote(noteId).any((c) => c.id == h.token.cardId),
+    );
     _dropLearning(id);
     _removeNote(noteId);
     repo.deleteNote(noteId);

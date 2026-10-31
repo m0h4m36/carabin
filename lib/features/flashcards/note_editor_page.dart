@@ -5,11 +5,16 @@ import 'package:provider/provider.dart';
 import '../../data/database.dart';
 import '../../data/flashcard_models.dart';
 import '../../data/flashcards_repository.dart';
+import '../../data/media_store.dart';
 import '../../domain/note_types.dart';
 import '../../l10n/textes.dart';
 import '../../l10n/textes_cartes.dart';
+import '../../l10n/textes_occlusion.dart';
 import '../../ui/dialogs.dart';
+import '../../ui/pickers.dart';
 import 'card_text.dart';
+import 'occlusion_editor.dart';
+import 'occlusion_view.dart';
 import 'text_editing.dart';
 
 /// Création et modification d'une note (et donc de ses cartes).
@@ -40,7 +45,9 @@ class NoteEditorPage extends StatefulWidget {
 }
 
 class _FieldSlot {
-  _FieldSlot(this.key) : controller = TextEditingController(), focus = FocusNode();
+  _FieldSlot(this.key)
+    : controller = TextEditingController(),
+      focus = FocusNode();
   final String key;
   final TextEditingController controller;
   final FocusNode focus;
@@ -52,13 +59,20 @@ class _FieldSlot {
 }
 
 class _NoteEditorPageState extends State<NoteEditorPage> {
-  static const _creatable = [NoteType.cloze, NoteType.basic, NoteType.reversed, NoteType.typed];
+  static const _creatable = [
+    NoteType.cloze,
+    NoteType.basic,
+    NoteType.reversed,
+    NoteType.typed,
+    NoteType.occlusion,
+  ];
 
   late final Map<String, _FieldSlot> _slots = {
     for (final k in const ['text', 'front', 'back', 'extra', 'context'])
       k: _FieldSlot(k),
   };
   final _tags = TextEditingController();
+  final _occ = OcclusionDraft();
   bool _tagsPinned = false;
   NoteType _type = NoteType.cloze;
   int? _deckId;
@@ -86,6 +100,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       _showContext = n.fields.context.isNotEmpty;
       _tags.text = n.tags.join(' ');
       _clozeNumber = nextClozeNumber(n.fields.text('text'));
+      if (n.type == NoteType.occlusion) _occ.load(n.fields);
     } else {
       final decks = repo.decks();
       _deckId = widget.deckId ?? (decks.length == 1 ? decks.first.id : null);
@@ -93,6 +108,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     for (final s in _slots.values) {
       s.controller.addListener(_changed);
     }
+    _occ.addListener(_changed);
   }
 
   @override
@@ -101,6 +117,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       s.dispose();
     }
     _tags.dispose();
+    _occ.dispose();
     super.dispose();
   }
 
@@ -110,9 +127,17 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
   NoteFields _collect() {
     final data = <String, dynamic>{};
+    String read(String k) => _slots[k]!.controller.text.trim();
     void put(String k) {
-      final t = _slots[k]!.controller.text.trim();
+      final t = read(k);
       if (t.isNotEmpty) data[k] = t;
+    }
+
+    if (_type == NoteType.occlusion) {
+      return _occ.toFields(
+        extra: read('extra'),
+        context: _showContext ? read('context') : '',
+      );
     }
 
     switch (_type) {
@@ -130,9 +155,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   }
 
   List<String> _tagList() => [
-        for (final t in _tags.text.split(RegExp(r'\s+')))
-          if (t.isNotEmpty) t,
-      ];
+    for (final t in _tags.text.split(RegExp(r'\s+')))
+      if (t.isNotEmpty) t,
+  ];
 
   // ----------------------------------------------------------- actions
 
@@ -149,7 +174,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       return;
     }
     if (_isEdit) {
-      final ok = await guarded(context, () => repo.updateNote(widget.noteId!, fields, tags: _tagList()));
+      final ok = await guarded(
+        context,
+        () => repo.updateNote(widget.noteId!, fields, tags: _tagList()),
+      );
       if (ok && mounted) {
         showInfo(context, TxCards.noteSaved);
         Navigator.of(context).pop();
@@ -183,6 +211,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         if (!s.pinned) s.controller.clear();
       }
       if (!_tagsPinned) _tags.clear();
+      if (_type == NoteType.occlusion) _occ.reset();
       _clozeNumber = nextClozeNumber(_slots['text']!.controller.text);
       _previewOrd = 0;
       _error = null;
@@ -192,8 +221,33 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   }
 
   void _focusFirst() {
+    if (_type == NoteType.occlusion) return;
     final first = _type == NoteType.cloze ? 'text' : 'front';
     _slots[first]!.focus.requestFocus();
+  }
+
+  Future<void> _insertImage(_FieldSlot slot) async {
+    final media = context.read<MediaStore>();
+    final String? path;
+    try {
+      path = await Pickers.image();
+    } on Object catch (e) {
+      if (mounted) showError(context, e);
+      return;
+    }
+    if (path == null || !mounted) return;
+    final String name;
+    try {
+      name = media.addFile(path);
+    } on Object catch (e) {
+      showError(context, e);
+      return;
+    }
+    slot.controller.value = insertAtCursor(
+      slot.controller.value,
+      imageMarker(name),
+    );
+    slot.focus.requestFocus();
   }
 
   _FieldSlot? get _focused {
@@ -252,6 +306,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         LogicalKeyboardKey.digit2,
         LogicalKeyboardKey.digit3,
         LogicalKeyboardKey.digit4,
+        LogicalKeyboardKey.digit5,
       ][i];
       map[SingleActivator(key, alt: true)] = () => _setType(_creatable[i]);
     }
@@ -267,8 +322,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     final theme = Theme.of(context);
     final decks = repo.decks();
     final fields = _collect();
-    final ords = validateNote(_type, fields) == null ? cardOrdinals(_type, fields) : const <int>[];
-    final ord = ords.isEmpty ? 0 : (ords.contains(_previewOrd) ? _previewOrd : ords.first);
+    final ords = validateNote(_type, fields) == null
+        ? cardOrdinals(_type, fields)
+        : const <int>[];
+    final occlusionCards = _type == NoteType.occlusion ? _occ.cardCount : 0;
+    final ord = ords.isEmpty
+        ? 0
+        : (ords.contains(_previewOrd) ? _previewOrd : ords.first);
 
     return CallbackShortcuts(
       bindings: _bindings(),
@@ -280,7 +340,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
               padding: const EdgeInsets.only(right: 12),
               child: FilledButton(
                 onPressed: _submit,
-                child: Text(_isEdit ? TxCards.saveChanges : TxCards.add),
+                child: Text(
+                  _isEdit
+                      ? TxCards.saveChanges
+                      : _type == NoteType.occlusion
+                      ? TxOcclusion.addCards(occlusionCards)
+                      : TxCards.add,
+                ),
               ),
             ),
           ],
@@ -310,7 +376,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                   const SizedBox(height: 4),
                   Text(
                     TxCards.typeHelp(_type),
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ] else ...[
@@ -342,7 +410,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                  Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                 ],
                 const SizedBox(height: 20),
                 _preview(fields, ords, ord),
@@ -350,12 +421,16 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                 if (!_isEdit && _created > 0)
                   Text(
                     TxCards.added(_cardsCreated),
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 const SizedBox(height: 4),
                 Text(
                   TxCards.shortcutsHint,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
                 ),
               ],
             ),
@@ -378,7 +453,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
               border: OutlineInputBorder(),
             ),
             items: [
-              for (final d in decks) DropdownMenuItem(value: d.id, child: Text(d.name)),
+              for (final d in decks)
+                DropdownMenuItem(value: d.id, child: Text(d.name)),
             ],
             onChanged: (v) => setState(() {
               _deckId = v;
@@ -409,24 +485,36 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
   List<Widget> _fieldWidgets() {
     final out = <Widget>[];
-    void rich(String key, String label, {int minLines = 3, bool cloze = false, bool optional = false}) {
+    void rich(
+      String key,
+      String label, {
+      int minLines = 3,
+      bool cloze = false,
+      bool optional = false,
+    }) {
       final slot = _slots[key]!;
-      out.add(_RichField(
-        label: label,
-        slot: slot,
-        minLines: minLines,
-        showPin: !_isEdit,
-        onFormat: (f) => _format(f, slot),
-        onPin: (v) => setState(() => slot.pinned = v),
-        cloze: cloze
-            ? _ClozeControls(
-                number: _clozeNumber,
-                onPrev: () => setState(() => _clozeNumber = _clozeNumber > 1 ? _clozeNumber - 1 : 1),
-                onNext: () => setState(() => _clozeNumber++),
-                onInsert: _cloze,
-              )
-            : null,
-      ));
+      out.add(
+        _RichField(
+          label: label,
+          slot: slot,
+          minLines: minLines,
+          showPin: !_isEdit,
+          onFormat: (f) => _format(f, slot),
+          onImage: () => _insertImage(slot),
+          onPin: (v) => setState(() => slot.pinned = v),
+          cloze: cloze
+              ? _ClozeControls(
+                  number: _clozeNumber,
+                  onPrev: () => setState(
+                    () =>
+                        _clozeNumber = _clozeNumber > 1 ? _clozeNumber - 1 : 1,
+                  ),
+                  onNext: () => setState(() => _clozeNumber++),
+                  onInsert: _cloze,
+                )
+              : null,
+        ),
+      );
       out.add(const SizedBox(height: 12));
     }
 
@@ -437,23 +525,28 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         rich('front', TxCards.fieldFront);
         rich('back', TxCards.fieldBack);
       case NoteType.occlusion:
-        break;
+        out.add(OcclusionEditor(draft: _occ));
+        out.add(const SizedBox(height: 16));
     }
     rich('extra', TxCards.fieldExtra, minLines: 2);
     if (_showContext) {
       rich('context', TxCards.fieldContext, minLines: 2);
     }
-    out.add(Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () => setState(() {
-          _showContext = !_showContext;
-          if (!_showContext) _slots['context']!.controller.clear();
-        }),
-        icon: Icon(_showContext ? Icons.remove : Icons.add),
-        label: Text(_showContext ? TxCards.removeContext : TxCards.addContext),
+    out.add(
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => setState(() {
+            _showContext = !_showContext;
+            if (!_showContext) _slots['context']!.controller.clear();
+          }),
+          icon: Icon(_showContext ? Icons.remove : Icons.add),
+          label: Text(
+            _showContext ? TxCards.removeContext : TxCards.addContext,
+          ),
+        ),
       ),
-    ));
+    );
     return out;
   }
 
@@ -466,21 +559,41 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         TxCards.previewEmpty,
         style: theme.textTheme.bodyMedium?.copyWith(color: scheme.outline),
       );
-    } else {
-      final face = renderFace(_type, fields, ord);
+    } else if (_type == NoteType.occlusion) {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(TxCards.previewQuestion, style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline)),
+          Text(
+            TxCards.previewQuestion,
+            style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline),
+          ),
           const SizedBox(height: 6),
-          FaceText(face.question, textAlign: TextAlign.start, style: theme.textTheme.bodyLarge),
+          OcclusionView(
+            fields: fields,
+            ord: ord,
+            revealed: false,
+            maxHeight: 260,
+          ),
           const Divider(height: 24),
-          Text(TxCards.previewAnswer, style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline)),
+          Text(
+            TxCards.previewAnswer,
+            style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline),
+          ),
           const SizedBox(height: 6),
-          FaceText(face.answer, textAlign: TextAlign.start, style: theme.textTheme.bodyLarge),
-          if (face.extra.isNotEmpty) ...[
+          OcclusionView(
+            fields: fields,
+            ord: ord,
+            revealed: true,
+            maxHeight: 260,
+          ),
+          if (fields.extra.isNotEmpty) ...[
             const SizedBox(height: 8),
-            RichFieldText(face.extra, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+            RichFieldText(
+              fields.extra,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
           ],
           if (ords.length > 1) ...[
             const SizedBox(height: 12),
@@ -489,9 +602,62 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
               children: [
                 for (final o in ords)
                   ChoiceChip(
-                    label: Text(_type == NoteType.cloze
-                        ? TxCards.clozeOrdinal(o)
-                        : TxCards.cardOrdinal(o)),
+                    label: Text(TxCards.cardOrdinal(o)),
+                    selected: o == ord,
+                    onSelected: (_) => setState(() => _previewOrd = o),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      );
+    } else {
+      final face = renderFace(_type, fields, ord);
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            TxCards.previewQuestion,
+            style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline),
+          ),
+          const SizedBox(height: 6),
+          FaceText(
+            face.question,
+            textAlign: TextAlign.start,
+            style: theme.textTheme.bodyLarge,
+          ),
+          const Divider(height: 24),
+          Text(
+            TxCards.previewAnswer,
+            style: theme.textTheme.labelMedium?.copyWith(color: scheme.outline),
+          ),
+          const SizedBox(height: 6),
+          FaceText(
+            face.answer,
+            textAlign: TextAlign.start,
+            style: theme.textTheme.bodyLarge,
+          ),
+          if (face.extra.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            RichFieldText(
+              face.extra,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if (ords.length > 1) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final o in ords)
+                  ChoiceChip(
+                    label: Text(
+                      _type == NoteType.cloze
+                          ? TxCards.clozeOrdinal(o)
+                          : TxCards.cardOrdinal(o),
+                    ),
                     selected: o == ord,
                     onSelected: (_) => setState(() => _previewOrd = o),
                   ),
@@ -510,7 +676,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(TxCards.preview, style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary)),
+          Text(
+            TxCards.preview,
+            style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary),
+          ),
           const SizedBox(height: 8),
           body,
         ],
@@ -539,12 +708,14 @@ class _PinButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton(
-        tooltip: pinned ? 'Ne plus garder ce champ' : 'Garder ce champ pour la carte suivante',
-        isSelected: pinned,
-        icon: const Icon(Icons.push_pin_outlined),
-        selectedIcon: const Icon(Icons.push_pin),
-        onPressed: () => onChanged(!pinned),
-      );
+    tooltip: pinned
+        ? 'Ne plus garder ce champ'
+        : 'Garder ce champ pour la carte suivante',
+    isSelected: pinned,
+    icon: const Icon(Icons.push_pin_outlined),
+    selectedIcon: const Icon(Icons.push_pin),
+    onPressed: () => onChanged(!pinned),
+  );
 }
 
 class _RichField extends StatelessWidget {
@@ -554,6 +725,7 @@ class _RichField extends StatelessWidget {
     required this.minLines,
     required this.showPin,
     required this.onFormat,
+    required this.onImage,
     required this.onPin,
     this.cloze,
   });
@@ -563,6 +735,7 @@ class _RichField extends StatelessWidget {
   final int minLines;
   final bool showPin;
   final ValueChanged<Format> onFormat;
+  final VoidCallback onImage;
   final ValueChanged<bool> onPin;
   final _ClozeControls? cloze;
 
@@ -570,10 +743,10 @@ class _RichField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     Widget fmt(IconData icon, String tip, Format f) => IconButton(
-          tooltip: tip,
-          icon: Icon(icon),
-          onPressed: () => onFormat(f),
-        );
+      tooltip: tip,
+      icon: Icon(icon),
+      onPressed: () => onFormat(f),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -583,7 +756,16 @@ class _RichField extends StatelessWidget {
             fmt(Icons.format_bold, TxCards.bold, Format.bold),
             fmt(Icons.format_italic, TxCards.italic, Format.italic),
             fmt(Icons.format_underline, TxCards.underline, Format.underline),
-            fmt(Icons.border_color_outlined, TxCards.highlight, Format.highlight),
+            fmt(
+              Icons.border_color_outlined,
+              TxCards.highlight,
+              Format.highlight,
+            ),
+            IconButton(
+              tooltip: TxOcclusion.insertImage,
+              icon: const Icon(Icons.image_outlined),
+              onPressed: onImage,
+            ),
             if (cloze != null) ...[
               const SizedBox(width: 8),
               IconButton(
@@ -603,8 +785,7 @@ class _RichField extends StatelessWidget {
                 label: const Text(TxCards.cloze),
               ),
             ],
-            if (showPin)
-              _PinButton(pinned: slot.pinned, onChanged: onPin),
+            if (showPin) _PinButton(pinned: slot.pinned, onChanged: onPin),
           ],
         ),
         TextField(

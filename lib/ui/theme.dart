@@ -26,10 +26,7 @@ class CarabinTheme {
         space: 1,
         color: scheme.outlineVariant.withValues(alpha: 0.5),
       ),
-      cardTheme: const CardThemeData(
-        elevation: 0,
-        margin: EdgeInsets.zero,
-      ),
+      cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
       textTheme: const TextTheme(
         headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
         titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

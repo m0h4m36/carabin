@@ -27,16 +27,35 @@ void main() {
   setUp(() {
     db = AppDatabase.inMemory();
     now = DateTime(2030, 3, 1, 9);
-    repo = FlashcardsRepository(db, SettingsRepository(db), clock: () => now, random: _R());
+    repo = FlashcardsRepository(
+      db,
+      SettingsRepository(db),
+      clock: () => now,
+      random: _R(),
+    );
     deck = repo.createDeck('X').id;
-    repo.setDeckOptions(deck, const StudyOptions(onePerNotePerDay: false, order: StudyOrder.course));
+    repo.setDeckOptions(
+      deck,
+      const StudyOptions(onePerNotePerDay: false, order: StudyOrder.course),
+    );
   });
   tearDown(() => db.dispose());
 
   List<int> add(int n) => [
-        for (var i = 1; i <= n; i++)
-          repo.cardsOfNote(repo.addNote(deck, NoteType.basic, NoteFields({'front': 'Q$i', 'back': 'R$i'})).id).single.id,
-      ];
+    for (var i = 1; i <= n; i++)
+      repo
+          .cardsOfNote(
+            repo
+                .addNote(
+                  deck,
+                  NoteType.basic,
+                  NoteFields({'front': 'Q$i', 'back': 'R$i'}),
+                )
+                .id,
+          )
+          .single
+          .id,
+  ];
 
   test('séance vide', () {
     final s = ReviewSession(repo);
@@ -71,15 +90,18 @@ void main() {
     expect(s.finished, isFalse);
   });
 
-  test('une carte en apprentissage dont l\'heure est venue passe avant la file', () {
-    final ids = add(3);
-    final s = ReviewSession(repo);
-    s.answer(Grade.again);
-    expect(s.current, ids[1]);
-    now = now.add(const Duration(minutes: 2));
-    s.answer(Grade.easy);
-    expect(s.current, ids[0]); // revenue avant ids[2]
-  });
+  test(
+    'une carte en apprentissage dont l\'heure est venue passe avant la file',
+    () {
+      final ids = add(3);
+      final s = ReviewSession(repo);
+      s.answer(Grade.again);
+      expect(s.current, ids[1]);
+      now = now.add(const Duration(minutes: 2));
+      s.answer(Grade.easy);
+      expect(s.current, ids[0]); // revenue avant ids[2]
+    },
+  );
 
   test('annuler remet la carte et la suivante retrouve sa place', () {
     final ids = add(3);
@@ -132,7 +154,11 @@ void main() {
   });
 
   test('enterrer une notion retire ses cartes sœurs de la séance', () {
-    final n = repo.addNote(deck, NoteType.cloze, NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}));
+    final n = repo.addNote(
+      deck,
+      NoteType.cloze,
+      NoteFields({'text': '{{c1::a}} {{c2::b}} {{c3::c}}'}),
+    );
     final other = add(1).single;
     final s = ReviewSession(repo);
     expect(s.initialTotal, 4);
@@ -140,7 +166,10 @@ void main() {
     expect(s.current, other);
     s.answer(Grade.easy);
     expect(s.finished, isTrue);
-    expect(repo.cardsOfNote(n.id).every((c) => c.buriedUntilMs != null), isTrue);
+    expect(
+      repo.cardsOfNote(n.id).every((c) => c.buriedUntilMs != null),
+      isTrue,
+    );
   });
 
   test('séance sur une liste de cartes imposée (entraînement)', () {
@@ -171,7 +200,14 @@ void main() {
 
   test('carte maudite : retirée de la séance une fois suspendue', () {
     final id = add(1).single;
-    repo.setDeckOptions(deck, const StudyOptions(leechThreshold: 1, onePerNotePerDay: false, order: StudyOrder.course));
+    repo.setDeckOptions(
+      deck,
+      const StudyOptions(
+        leechThreshold: 1,
+        onePerNotePerDay: false,
+        order: StudyOrder.course,
+      ),
+    );
     repo.answer(id, Grade.good);
     now = now.add(const Duration(minutes: 11));
     repo.answer(id, Grade.good);

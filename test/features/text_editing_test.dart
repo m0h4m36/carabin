@@ -3,9 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 TextEditingValue v(String text, int a, int b) => TextEditingValue(
-      text: text,
-      selection: TextSelection(baseOffset: a, extentOffset: b),
-    );
+  text: text,
+  selection: TextSelection(baseOffset: a, extentOffset: b),
+);
 
 String sel(TextEditingValue t) => t.selection.textInside(t.text);
 

@@ -27,13 +27,12 @@ class PlaceholderPage extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 destination.description,
-                style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                style: text.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
-              Text(
-                Tx.comingSoon,
-                style: text.bodyMedium,
-              ),
+              Text(Tx.comingSoon, style: text.bodyMedium),
             ],
           ),
         ),

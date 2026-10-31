@@ -1,5 +1,6 @@
 import '../data/errors.dart';
 import 'textes_cartes.dart';
+import 'textes_echange.dart';
 
 /// Couche de textes de l'interface (français). Aucun texte d'écran ne doit
 /// être écrit en dur ailleurs : on passe par cette classe, ce qui prépare
@@ -41,7 +42,9 @@ abstract final class Tx {
     if (months.round() < 12) return '${months.round()} mois';
     final years = days / 365.25;
     final text = years.toStringAsFixed(1).replaceAll('.', ',');
-    final trimmed = text.endsWith(',0') ? text.substring(0, text.length - 2) : text;
+    final trimmed = text.endsWith(',0')
+        ? text.substring(0, text.length - 2)
+        : text;
     return '$trimmed an${years >= 2 ? 's' : ''}';
   }
 
@@ -149,13 +152,12 @@ abstract final class Tx {
     final m = missing == 0
         ? ''
         : ' ${plural(missing, 'document est introuvable', 'documents sont introuvables')} '
-            'sur le disque (rien n\'a été supprimé).';
+              'sur le disque (rien n\'a été supprimé).';
     return '$a$m';
   }
 
-  static String importedCount(int n) => n == 1
-      ? '1 document importé.'
-      : '$n documents importés.';
+  static String importedCount(int n) =>
+      n == 1 ? '1 document importé.' : '$n documents importés.';
 
   // --------------------------------------------------------------- erreurs
   static String errorMessage(Object e) {
@@ -168,6 +170,8 @@ abstract final class Tx {
       return 'Cet élément n\'existe plus. Revenez en arrière et réessayez.';
     }
     if (e is InvalidNoteError) return TxCards.issue(e.issue);
+    if (e is UnsupportedFileError) return TxExchange.unsupportedFile;
+    if (e is ExchangeError) return TxExchange.problem(e.problem);
     if (e is FileProblemError) {
       return 'Problème avec le disque : ${e.detail}';
     }

@@ -25,9 +25,9 @@ class _AppShellState extends State<AppShell> {
   final Set<int> _visited = {0};
 
   void _select(int index) => setState(() {
-        _index = index;
-        _visited.add(index);
-      });
+    _index = index;
+    _visited.add(index);
+  });
 
   Widget _pageFor(int i) {
     final destination = carabinDestinations[i];
@@ -39,18 +39,18 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _body() => IndexedStack(
-        index: _index,
-        children: [
-          for (var i = 0; i < carabinDestinations.length; i++)
-            if (_visited.contains(i))
-              KeyedSubtree(
-                key: ValueKey(carabinDestinations[i].id),
-                child: _pageFor(i),
-              )
-            else
-              const SizedBox.shrink(),
-        ],
-      );
+    index: _index,
+    children: [
+      for (var i = 0; i < carabinDestinations.length; i++)
+        if (_visited.contains(i))
+          KeyedSubtree(
+            key: ValueKey(carabinDestinations[i].id),
+            child: _pageFor(i),
+          )
+        else
+          const SizedBox.shrink(),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
