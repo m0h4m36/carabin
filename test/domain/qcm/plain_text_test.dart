@@ -10,7 +10,10 @@ void main() {
   });
 
   test('retire les images et les blancs en trop', () {
-    expect(plainOf('Avant [img:abcdef0123456789.png]\n\n  après  '), 'Avant après');
+    expect(
+      plainOf('Avant [img:abcdef0123456789.png]\n\n  après  '),
+      'Avant après',
+    );
   });
 
   test('un astérisque échappé ou une multiplication restent du texte', () {

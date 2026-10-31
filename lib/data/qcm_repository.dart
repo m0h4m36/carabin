@@ -697,10 +697,12 @@ SELECT COALESCE(MAX(p), -1) + 1 AS n FROM (
 
   /// Épreuve proposée par « Prochaine épreuve » : la première jamais passée
   /// (dans l'ordre de la liste), sinon celle passée il y a le plus longtemps.
-  ExamSummary? nextExam() {
+  ///
+  /// [except] écarte une épreuve (celle qu'on vient de passer).
+  ExamSummary? nextExam({int? except}) {
     final list = [
       for (final s in exams())
-        if (s.ready > 0) s,
+        if (s.ready > 0 && s.exam.id != except) s,
     ];
     if (list.isEmpty) return null;
     for (final s in list) {

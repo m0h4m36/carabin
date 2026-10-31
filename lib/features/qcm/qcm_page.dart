@@ -13,6 +13,7 @@ import '../../ui/widgets.dart';
 import 'exam_actions.dart';
 import 'exam_card.dart';
 import 'exam_editor_page.dart';
+import 'passage_flows.dart';
 
 enum _FilterKind { all, never, noSubject, subject }
 
@@ -117,10 +118,17 @@ class _QcmPageState extends State<QcmPage> {
     }
   }
 
-  /// Passer une série : réglages puis épreuve (à brancher sur l'écran de
-  /// passage).
-  Future<void> _compose(ExamSummary s) async {
-    showInfo(context, TxQcm.nothingToCompose);
+  /// Passer une série : réglages puis passage.
+  Future<void> _compose(ExamSummary s) => startExamPassage(context, s);
+
+  /// S'entraîner sur les séries cochées.
+  Future<void> _practice(List<ExamSummary> all, Set<int> selection) async {
+    final chosen = [
+      for (final s in all)
+        if (selection.contains(s.exam.id)) s,
+    ];
+    final started = await startPractice(context, chosen);
+    if (started && mounted) setState(() => _selection = null);
   }
 
   void _toggle(int id) {
@@ -454,24 +462,48 @@ class _QcmPageState extends State<QcmPage> {
           if (all.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SegmentedButton<int>(
-                  key: const ValueKey('qcm-tabs'),
-                  showSelectedIcon: false,
-                  style: const ButtonStyle(
-                    minimumSize: WidgetStatePropertyAll(Size(0, 44)),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SegmentedButton<int>(
+                    key: const ValueKey('qcm-tabs'),
+                    showSelectedIcon: false,
+                    style: const ButtonStyle(
+                      minimumSize: WidgetStatePropertyAll(Size(0, 44)),
+                    ),
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text(TxQcm.tabPass)),
+                      ButtonSegment(value: 1, label: Text(TxQcm.tabEdit)),
+                    ],
+                    selected: {_tab},
+                    onSelectionChanged: (s) => setState(() {
+                      _tab = s.first;
+                      _selection = null;
+                    }),
                   ),
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text(TxQcm.tabPass)),
-                    ButtonSegment(value: 1, label: Text(TxQcm.tabEdit)),
+                  if (_tab == 0 && !selecting) ...[
+                    OutlinedButton.icon(
+                      key: const ValueKey('practice'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: () => setState(() => _selection = <int>{}),
+                      icon: const Icon(Icons.fitness_center_outlined),
+                      label: const Text(TxQcm.practice),
+                    ),
+                    FilledButton.icon(
+                      key: const ValueKey('next-exam'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: () => startNextExam(context),
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text(TxQcm.nextExam),
+                    ),
                   ],
-                  selected: {_tab},
-                  onSelectionChanged: (s) => setState(() {
-                    _tab = s.first;
-                    _selection = null;
-                  }),
-                ),
+                ],
               ),
             ),
           Expanded(child: body),
@@ -512,6 +544,9 @@ class _QcmPageState extends State<QcmPage> {
                       if (done && mounted) setState(() => _selection = null);
                     },
               onDone: () => setState(() => _selection = null),
+              onPractice: selection.isEmpty
+                  ? null
+                  : () => _practice(all, selection),
             )
           : null,
     );
@@ -528,6 +563,7 @@ class _SelectionBar extends StatelessWidget {
     required this.onPastPapers,
     required this.onDelete,
     required this.onDone,
+    required this.onPractice,
   });
 
   final int count;
@@ -538,6 +574,7 @@ class _SelectionBar extends StatelessWidget {
   final VoidCallback? onPastPapers;
   final VoidCallback? onDelete;
   final VoidCallback onDone;
+  final VoidCallback? onPractice;
 
   @override
   Widget build(BuildContext context) {
@@ -584,10 +621,16 @@ class _SelectionBar extends StatelessWidget {
                 onPressed: onDelete,
                 child: const Text(TxQcm.menuDelete),
               ),
-              FilledButton(
+              TextButton(
                 key: const ValueKey('selection-done'),
                 onPressed: onDone,
                 child: const Text(TxQcm.done),
+              ),
+              FilledButton.icon(
+                key: const ValueKey('selection-practice'),
+                onPressed: onPractice,
+                icon: const Icon(Icons.fitness_center_outlined),
+                label: const Text(TxQcm.practice),
               ),
             ],
           ),
