@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/courses/courses_page.dart';
 import '../features/flashcards/flashcards_page.dart';
+import '../features/qcm/qcm_page.dart';
 import 'destinations.dart';
 import 'placeholder_page.dart';
 
@@ -34,6 +35,7 @@ class _AppShellState extends State<AppShell> {
     return switch (destination.id) {
       'courses' => const CoursesPage(),
       'flashcards' => const FlashcardsPage(),
+      'qcm' => const QcmPage(),
       _ => PlaceholderPage(destination: destination),
     };
   }

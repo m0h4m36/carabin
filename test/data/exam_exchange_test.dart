@@ -203,6 +203,21 @@ void main() {
     );
   });
 
+  test('remplacer garde la matière choisie ici si le fichier n\'en a pas', () {
+    final id = build();
+    final file = b.examExchange.parse(a.examExchange.exportExam(id).bytes);
+    final first = b.examExchange.apply(file);
+    // Chez le destinataire, la matière « Cardiologie » n'existe pas : on en
+    // choisit une à la main.
+    final y = b.courses.createYear('B');
+    final sem = b.courses.createSemester(y.id, 'S1');
+    final mine = b.courses.createSubject(sem.id, 'Ma matière', color: 2);
+    b.qcm.setExamSubject([first.examId], mine.id);
+    final again = b.examExchange.apply(file, replace: true);
+    expect(again.replaced, isTrue);
+    expect(b.qcm.exam(first.examId).subjectId, mine.id);
+  });
+
   test('remplacer quand rien n\'existe : simple création', () {
     final id = build();
     final file = b.examExchange.parse(a.examExchange.exportExam(id).bytes);

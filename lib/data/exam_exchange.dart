@@ -81,7 +81,10 @@ class ExamExchange {
   }
 
   /// Lit un fichier d'épreuve (sans rien enregistrer).
-  ExamFile parse(Uint8List bytes) {
+  ExamFile parse(Uint8List bytes) => parseBytes(bytes);
+
+  /// Comme [parse], sans dépôt : peut tourner hors du fil de l'interface.
+  static ExamFile parseBytes(Uint8List bytes) {
     final String text;
     try {
       text = utf8.decode(bytes);

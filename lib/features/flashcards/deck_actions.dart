@@ -77,13 +77,15 @@ Future<void> chooseSubjectFor(BuildContext context, Deck deck) async {
 /// Associe un poly à un deck (recherche par titre).
 Future<void> chooseCourseFor(BuildContext context, Deck deck) async {
   final repo = context.read<FlashcardsRepository>();
-  final id = await showDialog<int>(
-    context: context,
-    builder: (_) => const _CoursePicker(),
-  );
+  final id = await pickCourse(context);
   if (id == null || !context.mounted) return;
   await guarded(context, () => repo.setDeckDocument(deck.id, id));
 }
+
+/// Demande à quel poly rattacher quelque chose (recherche par titre) ;
+/// renvoie l'identifiant du document choisi, ou null.
+Future<int?> pickCourse(BuildContext context) =>
+    showDialog<int>(context: context, builder: (_) => const _CoursePicker());
 
 class _CoursePicker extends StatefulWidget {
   const _CoursePicker();

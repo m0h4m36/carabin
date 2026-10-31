@@ -252,7 +252,7 @@ ORDER BY e.position, e.id
         db.execute('DELETE FROM exam_questions WHERE exam_id = ?', [examId]);
         db.execute('DELETE FROM exam_cases WHERE exam_id = ?', [examId]);
         db.execute(
-          'UPDATE exams SET title = ?, subject_id = ?, items = ?, '
+          'UPDATE exams SET title = ?, subject_id = COALESCE(?, subject_id), items = ?, '
           'past_paper = ? WHERE id = ?',
           [
             _cleanTitle(doc.title),
