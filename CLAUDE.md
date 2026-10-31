@@ -27,7 +27,11 @@ flutter test        # doit passer avant chaque envoi
 Le workflow `.github/workflows/build.yml` compile Windows, Android, macOS et iOS (non signée) à chaque envoi sur `main`.
 
 ## Organisation du code
-- `lib/main.dart`, `lib/app.dart` : point d'entrée et racine.
-- `lib/ui/` : cadre de navigation, thème, pages.
-- À venir : `lib/data/` (SQLite, dossier de travail), `lib/features/<module>/` (cours, flashcards, qcm, planning).
-- Tests dans `test/`, au même chemin que le code testé.
+- `lib/main.dart`, `lib/app.dart` : point d'entrée et racine (choix du dossier, session ouverte).
+- `lib/app_session.dart` : tout ce qui dépend du dossier de travail ouvert (base, dépôts).
+- `lib/data/` : SQLite (`database.dart`, migrations dans `schema.dart` : n'en modifier aucune déjà publiée, en ajouter une), dossier de travail, dépôts de données, erreurs typées (`errors.dart`).
+- `lib/l10n/textes.dart` : tous les textes de l'interface (classe `Tx`).
+- `lib/ui/` : cadre de navigation, thème, boîtes de dialogue, composants communs.
+- `lib/features/<module>/` : un dossier par module (cours, puis flashcards, qcm, planning…).
+- Les écrans lisent la base en synchrone (`context.watch<AppDatabase>()` redessine après chaque écriture) et écrivent via les dépôts (`transaction`).
+- Tests dans `test/`, au même chemin que le code testé ; `test/support/test_session.dart` ouvre une session de test (base en mémoire, dossier temporaire).

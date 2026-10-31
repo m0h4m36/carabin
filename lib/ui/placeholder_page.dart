@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/textes.dart';
 import 'destinations.dart';
 
 /// Page provisoire d'un module, en attendant son implémentation.
@@ -30,7 +31,7 @@ class PlaceholderPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Ce module arrive bientôt.',
+                Tx.comingSoon,
                 style: text.bodyMedium,
               ),
             ],

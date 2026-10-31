@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/courses/courses_page.dart';
 import 'destinations.dart';
 import 'placeholder_page.dart';
 
@@ -19,16 +20,38 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  void _select(int index) => setState(() => _index = index);
+  /// Les modules déjà visités restent en vie (leur pile de pages est gardée).
+  final Set<int> _visited = {0};
+
+  void _select(int index) => setState(() {
+        _index = index;
+        _visited.add(index);
+      });
+
+  Widget _pageFor(int i) {
+    final destination = carabinDestinations[i];
+    return switch (destination.id) {
+      'courses' => const CoursesPage(),
+      _ => PlaceholderPage(destination: destination),
+    };
+  }
+
+  Widget _body() => IndexedStack(
+        index: _index,
+        children: [
+          for (var i = 0; i < carabinDestinations.length; i++)
+            if (_visited.contains(i))
+              KeyedSubtree(
+                key: ValueKey(carabinDestinations[i].id),
+                child: _pageFor(i),
+              )
+            else
+              const SizedBox.shrink(),
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
-    final destination = carabinDestinations[_index];
-    final page = PlaceholderPage(
-      key: ValueKey(destination.id),
-      destination: destination,
-    );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= kWideLayoutBreakpoint;
@@ -50,13 +73,13 @@ class _AppShellState extends State<AppShell> {
                   ],
                 ),
                 const VerticalDivider(),
-                Expanded(child: SafeArea(child: page)),
+                Expanded(child: SafeArea(child: _body())),
               ],
             ),
           );
         }
         return Scaffold(
-          body: SafeArea(child: page),
+          body: SafeArea(child: _body()),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: _select,

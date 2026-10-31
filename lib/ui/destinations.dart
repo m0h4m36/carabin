@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/textes.dart';
+
 /// Un écran principal de l'application (une entrée de la barre latérale).
 class CarabinDestination {
   const CarabinDestination({
@@ -21,35 +23,35 @@ class CarabinDestination {
 const List<CarabinDestination> carabinDestinations = [
   CarabinDestination(
     id: 'dashboard',
-    label: 'Tableau de bord',
+    label: Tx.navDashboard,
     icon: Icons.dashboard_outlined,
     selectedIcon: Icons.dashboard,
     description: 'Votre journée : cartes à réviser, J du jour, progression.',
   ),
   CarabinDestination(
     id: 'courses',
-    label: 'Cours',
+    label: Tx.navCourses,
     icon: Icons.menu_book_outlined,
     selectedIcon: Icons.menu_book,
     description: 'Années, semestres, matières, thèmes et polys.',
   ),
   CarabinDestination(
     id: 'flashcards',
-    label: 'Flashcards',
+    label: Tx.navFlashcards,
     icon: Icons.style_outlined,
     selectedIcon: Icons.style,
     description: 'Paquets de cartes et révision espacée.',
   ),
   CarabinDestination(
     id: 'qcm',
-    label: 'QCM',
+    label: Tx.navQcm,
     icon: Icons.checklist_outlined,
     selectedIcon: Icons.checklist,
     description: 'Épreuves, entraînements et copies.',
   ),
   CarabinDestination(
     id: 'planning',
-    label: 'Planning',
+    label: Tx.navPlanning,
     icon: Icons.calendar_month_outlined,
     selectedIcon: Icons.calendar_month,
     description: 'Agenda et méthode des J.',
