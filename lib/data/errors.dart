@@ -1,3 +1,5 @@
+import '../domain/note_types.dart';
+
 /// Erreurs prévues de la couche de données. Les écrans les traduisent en
 /// phrases françaises (voir `lib/l10n/textes.dart`) : aucun texte ici.
 sealed class DataError implements Exception {
@@ -27,4 +29,10 @@ class FileProblemError extends DataError {
   final String detail;
   @override
   String toString() => 'FileProblemError($detail)';
+}
+
+/// La note est incomplète ou invalide (voir [NoteIssue]).
+class InvalidNoteError extends DataError {
+  const InvalidNoteError(this.issue);
+  final NoteIssue issue;
 }

@@ -27,6 +27,23 @@ abstract final class Tx {
   static String plural(int n, String one, String many) =>
       '$n ${n <= 1 ? one : many}';
 
+  /// « 10 min », « 3 j », « 2 mois »… (délai affiché sous les boutons de réponse).
+  static String interval(Duration d) {
+    final minutes = d.inSeconds / 60;
+    if (minutes < 1) return '< 1 min';
+    if (minutes < 60) return '${minutes.round()} min';
+    final hours = d.inMinutes / 60;
+    if (hours < 24) return '${hours.round()} h';
+    final days = d.inMinutes / 1440;
+    if (days < 31) return '${days.round()} j';
+    final months = days / 30.4375;
+    if (months.round() < 12) return '${months.round()} mois';
+    final years = days / 365.25;
+    final text = years.toStringAsFixed(1).replaceAll('.', ',');
+    final trimmed = text.endsWith(',0') ? text.substring(0, text.length - 2) : text;
+    return '$trimmed an${years >= 2 ? 's' : ''}';
+  }
+
   // ------------------------------------------------------------- navigation
   static const navDashboard = 'Tableau de bord';
   static const navCourses = 'Cours';

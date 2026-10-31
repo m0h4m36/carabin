@@ -56,4 +56,69 @@ CREATE TABLE documents (
 );
 CREATE INDEX documents_topic ON documents(topic_id);
 ''',
+
+  // 2 : paquets, notes, cartes et historique de révision
+  '''
+CREATE TABLE decks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL COLLATE NOCASE,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+  document_id INTEGER REFERENCES documents(id) ON DELETE SET NULL,
+  options_json TEXT,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  fields_json TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '',
+  document_id INTEGER REFERENCES documents(id) ON DELETE SET NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX notes_deck ON notes(deck_id);
+
+CREATE TABLE cards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  ord INTEGER NOT NULL,
+  state INTEGER NOT NULL DEFAULT 0,
+  step INTEGER,
+  stability REAL,
+  difficulty REAL,
+  due INTEGER NOT NULL,
+  last_review INTEGER,
+  reps INTEGER NOT NULL DEFAULT 0,
+  lapses INTEGER NOT NULL DEFAULT 0,
+  suspended INTEGER NOT NULL DEFAULT 0,
+  buried_until INTEGER,
+  UNIQUE (note_id, ord)
+);
+CREATE INDEX cards_due ON cards(state, due);
+
+CREATE TABLE review_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL,
+  reviewed_at INTEGER NOT NULL,
+  state_before INTEGER NOT NULL,
+  duration_ms INTEGER,
+  due_before INTEGER,
+  interval_days REAL
+);
+CREATE INDEX review_logs_time ON review_logs(reviewed_at);
+CREATE INDEX review_logs_card ON review_logs(card_id);
+
+CREATE TABLE practice_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  taken_at INTEGER NOT NULL,
+  total INTEGER NOT NULL,
+  correct INTEGER NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  deck_names TEXT NOT NULL
+);
+''',
 ];
