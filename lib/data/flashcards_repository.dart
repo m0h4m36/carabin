@@ -276,7 +276,8 @@ class FlashcardsRepository {
       _secure.nextInt(256).toRadixString(16).padLeft(2, '0'),
   ].join();
 
-  String _tagString(List<String> tags) => {
+  /// Étiquettes normalisées (sans doublon ni espace), séparées par des espaces.
+  String joinTags(List<String> tags) => {
     for (final t in tags)
       if (t.trim().isNotEmpty) t.trim().replaceAll(RegExp(r'\s+'), '_'),
   }.join(' ');
@@ -302,7 +303,7 @@ class FlashcardsRepository {
           deckId,
           type.name,
           fields.toJson(),
-          _tagString(tags),
+          joinTags(tags),
           documentId,
           nowMs,
           nowMs,
@@ -338,7 +339,7 @@ class FlashcardsRepository {
         'UPDATE notes SET fields_json = ?, tags = ?, updated_at = ? WHERE id = ?',
         [
           fields.toJson(),
-          tags == null ? _tagString(n.tags) : _tagString(tags),
+          tags == null ? joinTags(n.tags) : joinTags(tags),
           nowMs,
           noteId,
         ],

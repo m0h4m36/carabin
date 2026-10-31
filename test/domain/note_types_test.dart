@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:carabin/domain/note_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -326,6 +328,76 @@ void main() {
         duplicateKey(NoteType.occlusion, a),
         isNot(duplicateKey(NoteType.occlusion, c)),
       );
+    });
+  });
+
+  group('échappement', () {
+    test('une barre oblique inverse rend la marque littérale', () {
+      expect(stripRich(r'2 \* 3 \* 4'), '2 * 3 * 4');
+      expect(parseRich(r'\*pas italique\*').single.italic, isFalse);
+      expect(stripRich(r'\*pas italique\*'), '*pas italique*');
+      expect(stripRich(r'a\\b'), r'a\b');
+      expect(stripRich(r'\__x\__'), '__x__');
+      expect(stripRich(r'\==x\=='), '==x==');
+    });
+
+    test('une marque échappée ne referme pas une mise en forme', () {
+      final runs = parseRich(r'*a \* b*');
+      expect(runs.single.italic, isTrue);
+      expect(runs.single.text, 'a * b');
+    });
+
+    test('les autres barres obliques restent', () {
+      expect(stripRich(r'C:\temp \(x\)'), r'C:\temp \(x\)');
+      expect(stripRich(r'fin\'), r'fin\'); // barre finale : rien à échapper
+    });
+
+    test(
+      'escapeRich puis stripRich redonnent toujours le texte d\'origine',
+      () {
+        final rnd = Random(42);
+        const alphabet = [
+          '*',
+          '_',
+          '=',
+          r'\',
+          ' ',
+          'a',
+          'b',
+          '{',
+          '}',
+          ':',
+          '[',
+          ']',
+          'é',
+          '\n',
+        ];
+        for (var i = 0; i < 3000; i++) {
+          final s = [
+            for (var k = rnd.nextInt(14); k > 0; k--)
+              alphabet[rnd.nextInt(alphabet.length)],
+          ].join();
+          expect(
+            stripRich(escapeRich(s)),
+            s,
+            reason: 'texte : ${s.replaceAll('\n', '⏎')}',
+          );
+          expect(
+            parseRich(escapeRich(s)).every(
+              (r) => !r.bold && !r.italic && !r.underline && !r.highlight,
+            ),
+            isTrue,
+            reason: 'texte : $s',
+          );
+        }
+      },
+    );
+
+    test('un texte échappé peut être mis en forme par-dessus', () {
+      final text = '**${escapeRich('a * b')}**';
+      final runs = parseRich(text);
+      expect(runs.single.bold, isTrue);
+      expect(runs.single.text, 'a * b');
     });
   });
 }

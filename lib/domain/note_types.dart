@@ -244,6 +244,26 @@ Set<String> noteMedia(NoteFields f) => {
   if (f.image.isNotEmpty) f.image,
 };
 
+/// Copie de [f] où les médias sont renommés selon [renames] (ancien nom →
+/// nouveau nom), dans les textes comme pour l'image d'une occlusion.
+NoteFields remapMedia(NoteFields f, Map<String, String> renames) {
+  if (renames.isEmpty) return f;
+  final out = f.toMap();
+  for (final e in out.entries.toList()) {
+    final v = e.value;
+    if (v is! String) continue;
+    if (e.key == 'image') {
+      out[e.key] = renames[v] ?? v;
+    } else {
+      out[e.key] = v.replaceAllMapped(
+        _imagePattern,
+        (m) => '[img:${renames[m.group(1)!] ?? m.group(1)!}]',
+      );
+    }
+  }
+  return NoteFields(out);
+}
+
 /// Clé qui identifie « le même contenu » (détection des doublons).
 String duplicateKey(NoteType type, NoteFields f) {
   if (type == NoteType.occlusion) {
@@ -461,6 +481,13 @@ void _parseInto(String text, RichRun style, List<RichRun> out) {
   }
 
   while (i < text.length) {
+    if (text.codeUnitAt(i) == 0x5C /* \ */ &&
+        i + 1 < text.length &&
+        _escapable.contains(text[i + 1])) {
+      buf.write(text[i + 1]); // \* \_ \= \\ : le caractère lui-même
+      i += 2;
+      continue;
+    }
     if (text.startsWith('[img:', i)) {
       final m = _imagePattern.matchAsPrefix(text, i);
       if (m != null) {
@@ -503,6 +530,38 @@ void _parseInto(String text, RichRun style, List<RichRun> out) {
   flush();
 }
 
+/// Caractères qu'une barre oblique inverse rend littéraux (`\*` donne `*`).
+const _escapable = {'*', '_', '=', '\\'};
+
+/// Vrai si le caractère à [index] est précédé d'un nombre impair de barres
+/// obliques inverses (il est alors « échappé »).
+bool _escapedAt(String text, int index) {
+  var n = 0;
+  var i = index - 1;
+  while (i >= 0 && text.codeUnitAt(i) == 0x5C) {
+    n++;
+    i--;
+  }
+  return n.isOdd;
+}
+
+/// Écrit [text] pour qu'il s'affiche tel quel, même s'il contient des
+/// caractères qui seraient pris pour des marques de mise en forme.
+String escapeRich(String text) {
+  final out = StringBuffer();
+  for (var i = 0; i < text.length; i++) {
+    final ch = text[i];
+    final doubled =
+        (i > 0 && text[i - 1] == ch) ||
+        (i + 1 < text.length && text[i + 1] == ch);
+    if (ch == '*' || ch == '\\' || ((ch == '_' || ch == '=') && doubled)) {
+      out.write('\\');
+    }
+    out.write(ch);
+  }
+  return out.toString();
+}
+
 /// Position de la marque fermante : le texte entre les marques ne doit ni
 /// commencer ni finir par une espace (« 2 * 3 * 4 » reste du texte simple).
 int _closingMarker(String text, String marker, int from) {
@@ -513,7 +572,7 @@ int _closingMarker(String text, String marker, int from) {
     final inStars =
         marker == '*' &&
         (text[c - 1] == '*' || (c + 1 < text.length && text[c + 1] == '*'));
-    if (!inStars && !_isSpace(text[c - 1])) return c;
+    if (!inStars && !_isSpace(text[c - 1]) && !_escapedAt(text, c)) return c;
     c = text.indexOf(marker, c + 1);
   }
   return -1;

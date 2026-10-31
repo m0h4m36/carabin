@@ -9,12 +9,15 @@ import '../../data/models.dart';
 import '../../data/names.dart';
 import '../../l10n/textes.dart';
 import '../../l10n/textes_cartes.dart';
+import '../../l10n/textes_import.dart';
 import '../../ui/dialogs.dart';
 import '../../ui/palette.dart';
 import '../../ui/widgets.dart';
 import '../courses/document_viewer_page.dart';
 import 'deck_actions.dart';
 import 'deck_cards_page.dart';
+import 'export_flow.dart';
+import 'import_flow.dart';
 import 'note_editor_page.dart';
 import 'practice_page.dart';
 import 'review_page.dart';
@@ -31,6 +34,8 @@ enum _DeckAction {
   settings,
   deadline,
   catchUp,
+  share,
+  exportProgress,
   delete,
 }
 
@@ -152,10 +157,23 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   icon: Icons.style_outlined,
                   title: TxCards.noDecks,
                   message: TxCards.noDecksDetail,
-                  action: FilledButton.icon(
-                    onPressed: () => createDeckDialog(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text(TxCards.newDeck),
+                  action: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => createDeckDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text(TxCards.newDeck),
+                      ),
+                      OutlinedButton.icon(
+                        key: const ValueKey('empty-import'),
+                        onPressed: () => importCardsFlow(context),
+                        icon: const Icon(Icons.file_open_outlined),
+                        label: const Text(TxImport.importCards),
+                      ),
+                    ],
                   ),
                 )
               else ...[
@@ -255,10 +273,22 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                     _push(const StudyOptionsPage());
                   case 'catchup':
                     catchUp(context);
+                  case 'import':
+                    importCardsFlow(context);
+                  case 'export-all':
+                    exportAllFlow(context);
                 }
               },
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'new', child: Text(TxCards.newDeck)),
+                PopupMenuItem(
+                  value: 'import',
+                  child: Text(TxImport.importCards),
+                ),
+                PopupMenuItem(
+                  value: 'export-all',
+                  child: Text(TxImport.exportAllProgress),
+                ),
                 PopupMenuItem(
                   value: 'settings',
                   child: Text(TxCards.studySettings),
@@ -386,6 +416,10 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
         await setDeadline(context, d);
       case _DeckAction.catchUp:
         await catchUp(context, deck: d);
+      case _DeckAction.share:
+        await exportDeckFlow(context, d, progress: false);
+      case _DeckAction.exportProgress:
+        await exportDeckFlow(context, d, progress: true);
       case _DeckAction.delete:
         await deleteDeckDialog(context, d);
     }
@@ -708,6 +742,15 @@ class _DeckTile extends StatelessWidget {
               const PopupMenuItem(
                 value: _DeckAction.catchUp,
                 child: Text(TxCards.catchUp),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: _DeckAction.share,
+                child: Text(TxImport.shareDeck),
+              ),
+              const PopupMenuItem(
+                value: _DeckAction.exportProgress,
+                child: Text(TxImport.exportProgress),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(

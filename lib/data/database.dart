@@ -96,6 +96,28 @@ class AppDatabase extends ChangeNotifier {
     }
   }
 
+  /// Comme [transaction], mais le corps peut attendre (import long qui laisse
+  /// l'écran respirer). Tout est validé d'un coup à la fin, ou annulé si une
+  /// exception sort. Pendant ce temps, les écritures faites ailleurs joignent
+  /// la même transaction : à n'utiliser que derrière une fenêtre qui bloque
+  /// l'interface.
+  Future<T> batch<T>(Future<T> Function() body) async {
+    if (_depth > 0) return body();
+    raw.execute('BEGIN IMMEDIATE');
+    _depth = 1;
+    try {
+      final result = await body();
+      raw.execute('COMMIT');
+      _depth = 0;
+      _notify();
+      return result;
+    } catch (_) {
+      _depth = 0;
+      raw.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
   void _notify() {
     if (!_disposed) notifyListeners();
   }

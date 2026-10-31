@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'data/courses_repository.dart';
 import 'data/database.dart';
+import 'data/deck_exchange.dart';
 import 'data/flashcards_repository.dart';
 import 'data/media_store.dart';
 import 'data/settings_repository.dart';
@@ -14,6 +15,7 @@ class Session {
       media = MediaStore(workspace.mediaDir),
       courses = CoursesRepository(db, workspace, pageCounter: pageCounter) {
     flashcards = FlashcardsRepository(db, settings);
+    exchange = DeckExchange(db, flashcards);
     themeMode = ValueNotifier(settings.get(Keys.themeMode));
   }
 
@@ -25,6 +27,9 @@ class Session {
   /// Images des cartes.
   final MediaStore media;
   late final FlashcardsRepository flashcards;
+
+  /// Import et export de paquets.
+  late final DeckExchange exchange;
 
   /// Apparence choisie : null/« auto », « clair » ou « sombre ».
   late final ValueNotifier<String?> themeMode;
