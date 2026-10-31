@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/courses/courses_page.dart';
+import '../features/flashcards/flashcards_page.dart';
 import 'destinations.dart';
 import 'placeholder_page.dart';
 
@@ -32,6 +33,7 @@ class _AppShellState extends State<AppShell> {
     final destination = carabinDestinations[i];
     return switch (destination.id) {
       'courses' => const CoursesPage(),
+      'flashcards' => const FlashcardsPage(),
       _ => PlaceholderPage(destination: destination),
     };
   }

@@ -1,4 +1,5 @@
 import '../data/errors.dart';
+import 'textes_cartes.dart';
 
 /// Couche de textes de l'interface (français). Aucun texte d'écran ne doit
 /// être écrit en dur ailleurs : on passe par cette classe, ce qui prépare
@@ -166,6 +167,7 @@ abstract final class Tx {
     if (e is NotFoundError) {
       return 'Cet élément n\'existe plus. Revenez en arrière et réessayez.';
     }
+    if (e is InvalidNoteError) return TxCards.issue(e.issue);
     if (e is FileProblemError) {
       return 'Problème avec le disque : ${e.detail}';
     }

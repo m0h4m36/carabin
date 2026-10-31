@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'data/courses_repository.dart';
 import 'data/database.dart';
+import 'data/flashcards_repository.dart';
 import 'data/settings_repository.dart';
 import 'data/workspace.dart';
 
@@ -13,6 +14,7 @@ class Session {
     PageCounter? pageCounter,
   })  : settings = SettingsRepository(db),
         courses = CoursesRepository(db, workspace, pageCounter: pageCounter) {
+    flashcards = FlashcardsRepository(db, settings);
     themeMode = ValueNotifier(settings.get(Keys.themeMode));
   }
 
@@ -20,6 +22,7 @@ class Session {
   final AppDatabase db;
   final SettingsRepository settings;
   final CoursesRepository courses;
+  late final FlashcardsRepository flashcards;
 
   /// Apparence choisie : null/« auto », « clair » ou « sombre ».
   late final ValueNotifier<String?> themeMode;

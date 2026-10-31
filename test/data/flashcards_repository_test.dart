@@ -275,6 +275,14 @@ void main() {
       expect(repo.todayQueue(deckIds: [d.id]), hasLength(3));
     });
 
+    test('ordre imposé à la séance', () {
+      final d = repo.createDeck('X');
+      addBasics(d.id, 3);
+      repo.setDeckOptions(d.id, const StudyOptions(order: StudyOrder.shuffled, onePerNotePerDay: false));
+      final course = repo.todayQueue(deckIds: [d.id], order: StudyOrder.course);
+      expect(course, [...course]..sort());
+    });
+
     test('ordre dans le cours : conserve l\'ordre de création', () {
       final d = repo.createDeck('X');
       final notes = addBasics(d.id, 4);
@@ -561,6 +569,33 @@ void main() {
       expect(repo.hardCardCount(), 1);
       repo.answer(id, Grade.good, durationMs: 6000);
       expect(repo.averageSecondsPerCard(), 6);
+    });
+  });
+
+  group('prochaine échéance', () {
+    test('aucune carte programmée : null', () {
+      final d = repo.createDeck('X');
+      addBasics(d.id, 2);
+      expect(repo.nextDue(), isNull);
+    });
+
+    test('date de la première échéance et nombre de cartes ce jour-là', () {
+      final d = repo.createDeck('X');
+      repo.setDeckOptions(d.id, const StudyOptions(onePerNotePerDay: false));
+      final ids = [for (final n in addBasics(d.id, 3)) repo.cardsOfNote(n.id).single.id];
+      ids.forEach(graduate); // chacune revient dans 4 jours
+      final next = repo.nextDue(deckIds: [d.id])!;
+      expect(next.count, 3);
+      expect(next.at.difference(now).inDays, inInclusiveRange(3, 4));
+    });
+
+    test('une carte en apprentissage dans quelques minutes compte', () {
+      final d = repo.createDeck('X');
+      final id = repo.cardsOfNote(addBasics(d.id, 1).single.id).single.id;
+      repo.answer(id, Grade.good);
+      final next = repo.nextDue()!;
+      expect(next.count, 1);
+      expect(next.at.difference(now), const Duration(minutes: 10));
     });
   });
 

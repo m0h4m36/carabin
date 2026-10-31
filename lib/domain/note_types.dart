@@ -334,6 +334,7 @@ class RichRun {
 /// Marques de mise en forme : `**gras**`, `*italique*`, `__souligné__`,
 /// `==surligné==`. Une marque sans sa fermeture reste du texte simple.
 const _markers = <String, String>{
+  '***': 'bold-italic',
   '**': 'bold',
   '__': 'underline',
   '==': 'highlight',
@@ -373,8 +374,8 @@ void _parseInto(String text, RichRun style, List<RichRun> out) {
         _parseInto(
           inner,
           style._with(
-            bold: kind == 'bold' ? true : null,
-            italic: kind == 'italic' ? true : null,
+            bold: kind == 'bold' || kind == 'bold-italic' ? true : null,
+            italic: kind == 'italic' || kind == 'bold-italic' ? true : null,
             underline: kind == 'underline' ? true : null,
             highlight: kind == 'highlight' ? true : null,
           ),
@@ -396,7 +397,10 @@ int _closingMarker(String text, String marker, int from) {
   if (from >= text.length || _isSpace(text[from])) return -1;
   var c = text.indexOf(marker, from + 1);
   while (c != -1) {
-    if (!_isSpace(text[c - 1])) return c;
+    // une étoile simple ne referme pas à l'intérieur d'une suite d'étoiles
+    final inStars = marker == '*' &&
+        (text[c - 1] == '*' || (c + 1 < text.length && text[c + 1] == '*'));
+    if (!inStars && !_isSpace(text[c - 1])) return c;
     c = text.indexOf(marker, c + 1);
   }
   return -1;

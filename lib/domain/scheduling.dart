@@ -170,4 +170,24 @@ class SchedulingService {
     }
     return out;
   }
+
+  /// Nombre de jours distincts où une carte neuve, toujours répondue « Bien »,
+  /// est révisée pendant [days] jours (sert à estimer la charge quotidienne :
+  /// n nouvelles cartes par jour reviennent à n × ce nombre de révisions par
+  /// jour une fois le rythme installé).
+  int reviewDaysWithin(double retention, {int days = 365}) {
+    final start = DateTime.utc(2030, 1, 1, 8);
+    var now = start;
+    var sched = Schedule.fresh(start.millisecondsSinceEpoch);
+    final seen = <int>{};
+    var guard = 0;
+    while (guard++ < 100) {
+      final d = now.difference(start).inDays;
+      if (d > days) break;
+      seen.add(d);
+      sched = answer(1, sched, Grade.good, now, retention: retention).schedule;
+      now = DateTime.fromMillisecondsSinceEpoch(sched.dueMs, isUtc: true);
+    }
+    return seen.length;
+  }
 }

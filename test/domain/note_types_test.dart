@@ -101,6 +101,27 @@ void main() {
     });
     test('marques non fermées restent du texte', () {
       expect(stripRich('2 * 3 = 6'), '2 * 3 = 6');
+      expect(stripRich('2 * 3 * 4'), '2 * 3 * 4');
+      expect(stripRich('**ouvert'), '**ouvert');
+    });
+
+    test('imbrications', () {
+      final both = parseRich('***x***');
+      expect(both.single.text, 'x');
+      expect(both.single.bold && both.single.italic, isTrue);
+
+      final inItalic = parseRich('*a **b** c*');
+      expect(inItalic.map((r) => r.text).join(), 'a b c');
+      expect(inItalic.every((r) => r.italic), isTrue);
+      expect(inItalic.where((r) => r.bold).map((r) => r.text), ['b']);
+
+      final inBold = parseRich('**a *b* c**');
+      expect(inBold.map((r) => r.text).join(), 'a b c');
+      expect(inBold.every((r) => r.bold), isTrue);
+      expect(inBold.where((r) => r.italic).map((r) => r.text), ['b']);
+
+      final mixed = parseRich('__==x==__');
+      expect(mixed.single.underline && mixed.single.highlight, isTrue);
     });
   });
 }

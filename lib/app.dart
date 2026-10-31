@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'app_session.dart';
 import 'data/courses_repository.dart';
 import 'data/database.dart';
+import 'data/flashcards_repository.dart';
 import 'data/settings_repository.dart';
 import 'data/workspace.dart';
 import 'l10n/textes.dart';
@@ -91,6 +92,7 @@ class _CarabinAppState extends State<CarabinApp> {
         Provider<Workspace>.value(value: session.workspace),
         ChangeNotifierProvider<AppDatabase>.value(value: session.db),
         Provider<CoursesRepository>.value(value: session.courses),
+        Provider<FlashcardsRepository>.value(value: session.flashcards),
         Provider<SettingsRepository>.value(value: session.settings),
       ],
       child: ListenableBuilder(

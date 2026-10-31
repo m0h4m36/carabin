@@ -388,7 +388,7 @@ class FlashcardsRepository {
   /// Identifiants des cartes à passer aujourd'hui (révisions puis nouvelles),
   /// plafonds et règle « une carte par notion » appliqués, dans l'ordre choisi.
   /// Les cartes en apprentissage sont servies à part (voir [learningDue]).
-  List<int> todayQueue({List<int>? deckIds}) {
+  List<int> todayQueue({List<int>? deckIds, StudyOrder? order}) {
     final ids = deckIds ?? [for (final d in decks()) d.id];
     final nowMs = _nowMs();
     final endMs = studyDayEnd(_clock()).toUtc().millisecondsSinceEpoch;
@@ -455,7 +455,7 @@ class FlashcardsRepository {
       }
       if (globalReviewLeft != null) globalReviewLeft -= deckReviews.length;
       if (globalNewLeft != null) globalNewLeft -= deckNews.length;
-      if (opts.order == StudyOrder.shuffled) {
+      if ((order ?? opts.order) == StudyOrder.shuffled) {
         deckReviews.shuffle(_random);
         deckNews.shuffle(_random);
       }
@@ -511,6 +511,29 @@ class FlashcardsRepository {
       total: total,
       notes: notesCount,
     );
+  }
+
+  /// Prochaine échéance après maintenant : la date et le nombre de cartes
+  /// programmées ce jour d'étude là. Null s'il n'y a plus rien de programmé.
+  NextDue? nextDue({List<int>? deckIds}) {
+    final params = <Object?>[_nowMs()];
+    final f = _deckFilter(deckIds, params);
+    final first = db.select(
+      'SELECT MIN(c.due) AS d FROM cards c JOIN notes n ON n.id = c.note_id '
+      'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ?$f',
+      params,
+    ).first['d'];
+    if (first == null) return null;
+    final firstDue = DateTime.fromMillisecondsSinceEpoch(first as int);
+    final endMs = studyDayEnd(firstDue).toUtc().millisecondsSinceEpoch;
+    final params2 = <Object?>[_nowMs(), endMs];
+    final f2 = _deckFilter(deckIds, params2);
+    final count = db.select(
+      'SELECT COUNT(*) AS n FROM cards c JOIN notes n ON n.id = c.note_id '
+      'WHERE c.state IN (1, 2, 3) AND c.suspended = 0 AND c.due > ? AND c.due < ?$f2',
+      params2,
+    ).first['n'] as int;
+    return NextDue(firstDue, count);
   }
 
   /// Cartes jugées difficiles : difficulté FSRS élevée ou souvent oubliées.
@@ -739,9 +762,17 @@ class FlashcardsRepository {
       ))
         r['id'] as int,
     ];
-    if (shuffled) ids.shuffle(_random);
-    final picked = count == null || count >= ids.length ? ids : ids.sublist(0, count);
-    if (!shuffled) return picked;
+    final List<int> picked;
+    if (count == null || count >= ids.length) {
+      picked = ids;
+    } else {
+      picked = ([...ids]..shuffle(_random)).sublist(0, max(0, count));
+    }
+    if (shuffled) {
+      picked.shuffle(_random);
+    } else {
+      picked.sort(); // ordre du cours : celui de création
+    }
     return picked;
   }
 
@@ -770,6 +801,13 @@ class FlashcardsRepository {
   void deletePractice(int id) {
     db.transaction(() => db.execute('DELETE FROM practice_sessions WHERE id = ?', [id]));
   }
+}
+
+/// Prochaine échéance de révision.
+class NextDue {
+  const NextDue(this.at, this.count);
+  final DateTime at;
+  final int count;
 }
 
 class PracticeRecord {

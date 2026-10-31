@@ -90,6 +90,11 @@ void main() {
       expect(service.milestones(0.90), [4, 18, 63, 198]);
     });
 
+    test('charge estimée : 5 jours de révision la première année à 90 %', () {
+      expect(service.reviewDaysWithin(0.90), 5); // J0, J4, J18, J63, J198
+      expect(service.reviewDaysWithin(0.97), greaterThan(service.reviewDaysWithin(0.80)));
+    });
+
     test('probabilité de souvenir : 0 pour une carte neuve, décroît avec le temps', () {
       expect(service.retrievability(Schedule.fresh(0), t0), 0);
       var sched = Schedule.fresh(t0.millisecondsSinceEpoch);
