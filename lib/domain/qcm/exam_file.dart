@@ -92,12 +92,12 @@ class ExamFile {
 String encodeExamFile(
   ExamDoc exam,
   Map<String, Uint8List> media, {
-  required String appVersion,
+  String appVersion = '',
 }) {
   return jsonEncode({
     'format': examFileFormat,
     'version': examFileVersion,
-    'app': appVersion,
+    if (appVersion.isNotEmpty) 'app': appVersion,
     'exam': {
       'guid': exam.guid,
       'title': exam.title,

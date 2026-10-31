@@ -129,4 +129,86 @@ ALTER TABLE notes ADD COLUMN guid TEXT;
 UPDATE notes SET guid = lower(hex(randomblob(16)));
 CREATE UNIQUE INDEX notes_guid ON notes(guid);
 ''',
+
+  // 4 : épreuves de QCM (séries, cas, questions) et copies rendues
+  '''
+CREATE TABLE exams (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guid TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+  document_id INTEGER REFERENCES documents(id) ON DELETE SET NULL,
+  items TEXT NOT NULL DEFAULT '',
+  past_paper INTEGER NOT NULL DEFAULT 0,
+  imported INTEGER NOT NULL DEFAULT 0,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE exam_cases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  exam_id INTEGER NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  genre TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  context TEXT NOT NULL DEFAULT '',
+  article_text TEXT NOT NULL DEFAULT '',
+  article_file TEXT NOT NULL DEFAULT '',
+  position INTEGER NOT NULL
+);
+CREATE INDEX exam_cases_exam ON exam_cases(exam_id);
+
+CREATE TABLE exam_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  exam_id INTEGER NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  case_id INTEGER REFERENCES exam_cases(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  data_json TEXT NOT NULL,
+  ready INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX exam_questions_exam ON exam_questions(exam_id);
+CREATE INDEX exam_questions_case ON exam_questions(case_id);
+
+CREATE TABLE attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  exam_id INTEGER REFERENCES exams(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  practice INTEGER NOT NULL DEFAULT 0,
+  handwritten INTEGER NOT NULL DEFAULT 0,
+  scoring TEXT NOT NULL,
+  correction TEXT NOT NULL,
+  settings_json TEXT NOT NULL DEFAULT '{}',
+  started_at INTEGER NOT NULL,
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  timed_out INTEGER NOT NULL DEFAULT 0,
+  score REAL NOT NULL DEFAULT 0,
+  max_score REAL NOT NULL DEFAULT 0,
+  question_count INTEGER NOT NULL DEFAULT 0,
+  exam_total INTEGER
+);
+CREATE INDEX attempts_exam ON attempts(exam_id);
+CREATE INDEX attempts_time ON attempts(started_at);
+
+CREATE TABLE attempt_answers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attempt_id INTEGER NOT NULL REFERENCES attempts(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,
+  question_json TEXT NOT NULL,
+  case_json TEXT,
+  case_group INTEGER NOT NULL DEFAULT -1,
+  order_json TEXT NOT NULL DEFAULT '[]',
+  answer_json TEXT,
+  verdict TEXT NOT NULL,
+  score REAL NOT NULL DEFAULT 0,
+  max_score REAL NOT NULL DEFAULT 1,
+  doubt INTEGER NOT NULL DEFAULT 0,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+  topic_id INTEGER REFERENCES topics(id) ON DELETE SET NULL,
+  exam_id INTEGER REFERENCES exams(id) ON DELETE SET NULL,
+  notebook INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX attempt_answers_attempt ON attempt_answers(attempt_id);
+CREATE INDEX attempt_answers_subject ON attempt_answers(subject_id);
+''',
 ];

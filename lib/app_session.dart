@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'data/courses_repository.dart';
 import 'data/database.dart';
 import 'data/deck_exchange.dart';
+import 'data/exam_exchange.dart';
 import 'data/flashcards_repository.dart';
 import 'data/media_store.dart';
+import 'data/qcm_repository.dart';
 import 'data/settings_repository.dart';
 import 'data/workspace.dart';
 
@@ -16,6 +18,8 @@ class Session {
       courses = CoursesRepository(db, workspace, pageCounter: pageCounter) {
     flashcards = FlashcardsRepository(db, settings);
     exchange = DeckExchange(db, flashcards);
+    qcm = QcmRepository(db, settings);
+    examExchange = ExamExchange(qcm, courses, media);
     themeMode = ValueNotifier(settings.get(Keys.themeMode));
   }
 
@@ -30,6 +34,12 @@ class Session {
 
   /// Import et export de paquets.
   late final DeckExchange exchange;
+
+  /// Épreuves de QCM et copies.
+  late final QcmRepository qcm;
+
+  /// Partage d'épreuves (fichiers `.qcm.json`).
+  late final ExamExchange examExchange;
 
   /// Apparence choisie : null/« auto », « clair » ou « sombre ».
   late final ValueNotifier<String?> themeMode;

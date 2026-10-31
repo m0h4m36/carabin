@@ -20,6 +20,9 @@ class MediaStore {
   /// Formats d'image que l'application sait afficher.
   static const imageExtensions = {'png', 'jpg', 'gif', 'webp', 'bmp'};
 
+  /// Documents rangés avec les images (article d'un cas de lecture critique).
+  static const articleExtensions = {'pdf'};
+
   /// Extension normalisée d'un nom de fichier (« .JPEG » devient « jpg »), ou
   /// null si ce n'est pas une image prise en charge.
   static String? imageExtension(String fileName) {
@@ -36,7 +39,11 @@ class MediaStore {
 
   /// Enregistre des octets et renvoie le nom du fichier.
   String addBytes(Uint8List bytes, String extension) {
-    if (!imageExtensions.contains(extension)) {
+    final isArticle = articleExtensions.contains(extension);
+    if (!imageExtensions.contains(extension) && !isArticle) {
+      throw const UnsupportedFileError();
+    }
+    if (isArticle && !_looksLikePdf(bytes)) {
       throw const UnsupportedFileError();
     }
     final name = nameFor(bytes, extension);
@@ -56,6 +63,22 @@ class MediaStore {
     if (ext == null) throw const UnsupportedFileError();
     return addBytes(File(path).readAsBytesSync(), ext);
   }
+
+  /// Copie un article PDF choisi par l'utilisateur et renvoie son nom.
+  String addArticle(String path) {
+    if (p.extension(path).toLowerCase() != '.pdf') {
+      throw const UnsupportedFileError();
+    }
+    return addBytes(File(path).readAsBytesSync(), 'pdf');
+  }
+
+  static bool _looksLikePdf(Uint8List b) =>
+      b.length > 5 &&
+      b[0] == 0x25 &&
+      b[1] == 0x50 &&
+      b[2] == 0x44 &&
+      b[3] == 0x46 &&
+      b[4] == 0x2D;
 
   /// Fichier d'un média ; le nom doit être de la forme fabriquée par
   /// l'application (aucun chemin ne peut sortir du dossier).

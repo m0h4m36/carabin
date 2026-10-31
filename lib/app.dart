@@ -9,6 +9,7 @@ import 'data/courses_repository.dart';
 import 'data/database.dart';
 import 'data/flashcards_repository.dart';
 import 'data/media_store.dart';
+import 'data/qcm_repository.dart';
 import 'data/settings_repository.dart';
 import 'data/workspace.dart';
 import 'l10n/textes.dart';
@@ -95,6 +96,7 @@ class _CarabinAppState extends State<CarabinApp> {
         Provider<CoursesRepository>.value(value: session.courses),
         Provider<FlashcardsRepository>.value(value: session.flashcards),
         Provider<MediaStore>.value(value: session.media),
+        Provider<QcmRepository>.value(value: session.qcm),
         Provider<SettingsRepository>.value(value: session.settings),
       ],
       child: ListenableBuilder(
